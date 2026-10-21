@@ -197,9 +197,9 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
 /* Second section */
 body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .sechead,
 body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .sechead { display: none; }
-/* third section: three columns that stay put (each a quarter of the width), then column 4 with
+/* third section: three columns that stay put (each as wide as its longest word), then column 4 with
    31 day columns that scroll sideways; the arrow folds the first three away */
-.s3 .s2-scroll { --t1: 25cqw; --t2: 25cqw; --t3: 25cqw; }
+.s3 .s2-scroll { --t1: var(--w1, 48px); --t2: var(--w2, 48px); --t3: var(--w3, 48px); }
 .s3 .s2-scroll.collapsed { --t1: 0px; --t2: 0px; --t3: 0px; }
 .s3 .s2-scroll.collapsed .s3-left { display: none; }
 .s2-table.s3-table { grid-template-columns: var(--t1) var(--t2) var(--t3) repeat(31, 3.1em); grid-template-rows: repeat(12, 2.6em); }
@@ -555,6 +555,9 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   }
   // run every scheduled save now (before switching section)
   function flush() { Object.keys(pending).forEach(k => { clearTimeout(timers[k]); delete timers[k]; const fn = pending[k]; delete pending[k]; fn(); }); }
+  // write pending changes when the app is closed or sent to the background
+  window.addEventListener("pagehide", () => flush());
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flush(); });
   const saveConfig = () => { const path = cfgPath(), c = config; later("config", () => writeDoc(path, c)); };
   const saveMonth = k => { const path = monthPath(k), ms = months; later("m" + k, () => writeDoc(path, ms[k] || { cells: {} })); };
   const saveIndex = () => later("idx", () => writeDoc("registro/sezioni", { list: sections, appTitle }));
@@ -709,7 +712,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   // row 1 is a single cell across all 31 days, kept to the visible width and the same in every month
   const S3_ROWS = 12, S3_NUMBER_ROWS = [2];
   function buildS3Table() {
-    let h = [1, 2, 3].map(c => `<div class="s3-left l${c}" style="grid-column:${c}"></div>`).join("");
+    let h = [1, 2, 3].map(c => `<textarea id="s3L${c}" data-f="l${c}" class="c1 s3-left l${c}" rows="1" style="grid-column:${c}" aria-label="Columna ${c}"></textarea>`).join("");
     h += '<input id="s3Head" class="s3-head" style="grid-row:1;grid-column:4/-1" aria-label="Columna 4, fila 1">';
     for (let r = 2; r <= S3_ROWS; r++) for (let d = 1; d <= 31; d++) {
       const pos = `grid-row:${r};grid-column:${d + 3}`, last = d === 31 ? " last" : "";
@@ -723,11 +726,18 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   $("s3Table").addEventListener("input", e => {
     const t = e.target, key = t.dataset.k;
     if (t.id === "s3Head") { config.fixed = Object.assign({}, config.fixed, { head4: t.value }); saveConfig(); return; }
+    if (t.dataset.f) { config.fixed = Object.assign({}, config.fixed, { [t.dataset.f]: t.value }); saveConfig(); fitS3(); return; }
     if (!key) return;
     const m = months[viewKey] || (months[viewKey] = {});
     m[key] = (Array.isArray(m[key]) ? m[key] : []).slice(); m[key][+t.dataset.i] = t.value;
     saveMonth(viewKey);
   });
+  // each of the first three columns is as wide as its longest word; text centred both ways
+  function fitS3() {
+    const sc = $("s3Scroll");
+    [1, 2, 3].forEach(c => sc.style.setProperty("--w" + c, Math.ceil(Math.max(48, wordWidth($("s3L" + c)))) + "px"));
+    $("s3Table").querySelectorAll("textarea").forEach(t => { fitCell(t); centerCell(t); });
+  }
   function renderS3() {
     const { y, m } = parseKey(viewKey);
     $("s3M").textContent = MESI[m]; $("s3Y").textContent = y;
@@ -736,6 +746,8 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     if (document.activeElement !== t) t.value = (config.fixed && config.fixed.note) || "";
     grow(t);
     const mo = months[viewKey] || {};
+    [1, 2, 3].forEach(c => { const el = $("s3L" + c); if (document.activeElement !== el) el.value = (config.fixed && config.fixed["l" + c]) || ""; });
+    fitS3();
     const hd = $("s3Head");
     if (document.activeElement !== hd) hd.value = (config.fixed && config.fixed.head4) || "";
     for (let r = 3; r <= S3_ROWS; r++) {
