@@ -179,7 +179,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 .s3 .s2-scroll { --t1: 25cqw; --t2: 25cqw; --t3: 25cqw; }
 .s3 .s2-scroll.collapsed { --t1: 0px; --t2: 0px; --t3: 0px; }
 .s3 .s2-scroll.collapsed .s3-left { display: none; }
-.s2-table.s3-table { grid-template-columns: var(--t1) var(--t2) var(--t3) repeat(31, 3.1em); grid-template-rows: repeat(13, 2.6em); }
+.s2-table.s3-table { grid-template-columns: var(--t1) var(--t2) var(--t3) repeat(31, 3.1em); grid-template-rows: repeat(12, 2.6em); }
 .s3 .s3-left { position: sticky; z-index: 2; grid-row: 1 / -1; border-right: 1px solid var(--line); }
 .s3 .s3-left.l1 { left: 0; }
 .s3 .s3-left.l2 { left: var(--t1); }
@@ -681,12 +681,16 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   };
 
   // ---- third section (frame only for now) ----
-  const S3_ROWS = 12;
+  // column 4: 12 rows of 31 days; row 2 shows the day numbers
+  const S3_ROWS = 12, S3_NUMBER_ROWS = [2];
   function buildS3Table() {
     let h = [1, 2, 3].map(c => `<div class="s3-left l${c}" style="grid-column:${c}"></div>`).join("");
-    for (let d = 1; d <= 31; d++) h += `<div class="day dnum${d === 31 ? " last" : ""}" style="grid-row:1;grid-column:${d + 3}">${d}</div>`;
-    for (let r = 1; r <= S3_ROWS; r++) for (let d = 1; d <= 31; d++)
-      h += `<input id="e${r}-${d - 1}" data-i="${d - 1}" data-k="e${r}" size="1" class="day${d === 31 ? " last" : ""}" style="grid-row:${r + 1};grid-column:${d + 3}" aria-label="Columna 4, fila ${r}, día ${d}">`;
+    for (let r = 1; r <= S3_ROWS; r++) for (let d = 1; d <= 31; d++) {
+      const pos = `grid-row:${r};grid-column:${d + 3}`, last = d === 31 ? " last" : "";
+      h += S3_NUMBER_ROWS.includes(r)
+        ? `<div class="day dnum${last}" style="${pos}">${d}</div>`
+        : `<input id="e${r}-${d - 1}" data-i="${d - 1}" data-k="e${r}" size="1" class="day${last}" style="${pos}" aria-label="Columna 4, fila ${r}, día ${d}">`;
+    }
     $("s3Table").innerHTML = h;
   }
   buildS3Table();
@@ -705,6 +709,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     grow(t);
     const mo = months[viewKey] || {};
     for (let r = 1; r <= S3_ROWS; r++) {
+      if (S3_NUMBER_ROWS.includes(r)) continue;
       const a = Array.isArray(mo["e" + r]) ? mo["e" + r] : [];
       for (let i = 0; i < 31; i++) { const el = $("e" + r + "-" + i); if (document.activeElement !== el) el.value = a[i] || ""; }
     }
