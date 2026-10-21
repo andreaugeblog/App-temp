@@ -454,7 +454,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 <div class="scrim" id="set3Scrim" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="set3Title">
     <h2 id="set3Title">Generar valores</h2>
-    <p class="sub">Desde el día de inicio hasta hoy, en la columna 4. Cada color de la columna 2 marca cada cuánto se rellena su fila: una columna con valores y luego las vacías. Lo que ya hay en esas filas desde el día de inicio se borra y se genera de nuevo.</p>
+    <p class="sub">Desde el día de inicio hasta hoy, en la columna 4. Cada color de la columna 2 marca cada cuánto se rellena su fila. Quincenal, mensual y trimestral van rotando por toda la lista sin repetir el valor anterior. Lo que ya hay en esas filas desde el día de inicio se borra y se genera de nuevo.</p>
     <label class="field"><span>Día de inicio</span><input type="date" id="g3Start" class="num" style="width:auto;text-align:left"></label>
     <div class="field"><span>Valores generados</span>
       <p class="sub" style="margin:0">Letras o letras con número. Cada casilla generada recibe uno de estos valores al azar.</p>
@@ -879,13 +879,12 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   // day for monthly/quarterly rows, an on/off state and, per month, 31 values (months[k].v3[id]).
   // The generator draws from the values listed in the settings.
   const FREQ = {
-    blue:   { word: "Semanal",    tint: "#eaf2fd", mark: "#7fb0ea", every: 7,  text: "una columna con un valor, luego 6 vacías" },
+    blue:   { word: "Semanal",    tint: "#eaf2fd", mark: "#7fb0ea", every: 7,  text: "una columna con valores, luego 6 vacías; en cada columna como mucho 3 valores distintos entre todas las filas semanales" },
     yellow: { word: "Quincenal",  tint: "#fff8df", mark: "#e8c35a", every: 14, text: "una columna con un valor, luego 13 vacías" },
     red:    { word: "Mensual",    tint: "#fdeeec", mark: "#e58c84", months: 1, text: "un valor al mes, el día de la fila" },
     green:  { word: "Trimestral", tint: "#ebf7ec", mark: "#7cc48a", months: 3, text: "un valor cada 3 meses, el día de la fila, desde el mes del día de inicio" }
   };
   const vals3 = () => Array.isArray(config.vals3) ? config.vals3 : [];
-  const pickVal = () => pick(vals3());
   function drawVals() {
     const v = vals3();
     $("g3Vals").innerHTML = v.length
@@ -1060,13 +1059,32 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   $("set3Close").onclick = () => { $("set3Scrim").hidden = true; render(); };
   $("g3Go").onclick = () => {
     summarize3();
-    const touched = new Set(), work = {};
+    const touched = new Set(), work = {}, pool = vals3();
     let count = 0;
+    const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+    // Semanal: each day column uses a set of 2–3 different values (fewer if the list is shorter),
+    // one per cell; a new set is drawn for the next column and may repeat
+    const weekSet = {};
+    const semanalPick = col => {
+      if (!weekSet[col]) weekSet[col] = shuffle(pool).slice(0, Math.min(pool.length, 2 + Math.floor(Math.random() * 2)));
+      return pick(weekSet[col]);
+    };
+    // Quincenal, Mensual, Trimestral: per row, the whole list in a shuffled order, then a new
+    // shuffled round that never starts with the value just used
+    const bags = {};
+    const rotatePick = row => {
+      const b = bags[row.id] || (bags[row.id] = { queue: [], last: null });
+      if (!b.queue.length) {
+        b.queue = shuffle(pool);
+        if (b.queue.length > 1 && b.queue[0] === b.last) b.queue.push(b.queue.shift());
+      }
+      return (b.last = b.queue.shift());
+    };
     for (const { key, day, row, on } of g3Cells(config.gen3)) {
       const k = key + "|" + row.id;
       const arr = work[k] = work[k] || rowVals(months[key], row).slice();
       while (arr.length < 31) arr.push("");
-      arr[day - 1] = on ? pickVal() : "";
+      arr[day - 1] = !on ? "" : row.color === "blue" ? semanalPick(key + "-" + day) : rotatePick(row);
       if (on) count++;
     }
     for (const k in work) { const [key, id] = k.split("|"); setRowVals(key, rowById(id), work[k]); touched.add(key); }
