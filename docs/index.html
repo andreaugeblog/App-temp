@@ -213,6 +213,11 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 .s2-month { display: flex; align-items: center; gap: 2px; }
 /* month and year set like the month label of the first section */
 .s2-when { display: grid; text-align: center; min-width: 5.6em; line-height: 1.25; font-weight: 600; font-size: .95rem; }
+#footNote {
+  display: block; margin-top: 12px; width: 100%; height: 38px; min-height: 38px; resize: none; font: inherit; line-height: 1.45; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 7px 12px; overflow: hidden;
+}
+#footNote:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .s2 #s2Text, .s2 #s3Text {
   /* starts as tall as the month selector beside it and grows downward with the text */
   width: 100%; height: 38px; min-height: 38px; resize: none; font: inherit; line-height: 1.45; color: var(--ink);
@@ -362,7 +367,8 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     <span><i style="background:var(--warm)"></i>Dos últimos elementos (franja 2)</span>
   </div>
 </div>
-<p class="status" id="status">Cargando…</p>
+<p class="status" id="status" hidden></p>
+<textarea id="footNote" rows="1" placeholder="Escribe aquí…" aria-label="Notas de la sección"></textarea>
 
 <!-- PIN -->
 <div class="scrim" id="pinScrim" hidden>
@@ -667,8 +673,15 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   }
   const queueReassign = (ms = 1200) => later("reassign", checkReassign, ms);
 
+  // the note under each section's table: its own text, the same in every month
+  function renderFoot() {
+    const el = $("footNote");
+    if (document.activeElement !== el) el.value = (config.fixed && config.fixed.foot) || "";
+    grow(el);
+  }
   function render() {
     document.body.dataset.type = sec().type;
+    renderFoot();
     $("s2").hidden = sec().type !== "s2";
     $("s3").hidden = sec().type !== "s3";
     if (sec().type === "s2") { renderS2(); return; }
@@ -1064,6 +1077,11 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   });
   document.addEventListener("click", e => { if (!$("pick3").hidden && !e.target.closest("#pick3, input.pickable")) { $("pick3").hidden = true; pick3Cell = null; } });
   $("s3Scroll").addEventListener("scroll", () => { $("pick3").hidden = true; pick3Cell = null; });
+  $("footNote").addEventListener("input", e => {
+    const fx = sec().type === "s2" ? ensureFixed() : (config.fixed = Object.assign({}, config.fixed));
+    fx.foot = e.target.value;
+    grow(e.target); saveConfig();
+  });
   $("s3Text").addEventListener("input", e => {
     config.fixed = Object.assign({}, config.fixed, { note: e.target.value });
     grow(e.target); saveConfig();
