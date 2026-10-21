@@ -47,7 +47,7 @@ body{{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-seri
 img{{max-width:100%}}
 [hidden]{{display:none!important}}
 </style>
-<script>window.XLSX_SRC = "xlsx.full.min.js";</script>
+<script>window.XLSX_SRC = "xlsx.full.min.js"; window.APP_BUILD = "{version}";</script>
 </head>
 <body>
 """

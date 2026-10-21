@@ -20,7 +20,7 @@ body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.XLSX_SRC = "xlsx.full.min.js";</script>
+<script>window.XLSX_SRC = "xlsx.full.min.js"; window.APP_BUILD = "dda4c53a71";</script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -89,6 +89,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, [contenteditabl
 .dots { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
 .dots svg { width: 18px; height: 18px; fill: var(--ink); }
 .menu { position: absolute; right: 0; top: 46px; z-index: 30; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); min-width: 190px; padding: 6px; }
+.menu-ver { border-top: 1px solid var(--line); margin-top: 6px; padding: 8px 12px 4px; font-size: .74rem; color: var(--muted); line-height: 1.4; }
 .menu button { display: flex; width: 100%; align-items: center; gap: 10px; text-align: left; background: none; border: 0; padding: 10px 12px; border-radius: 7px; }
 .menu button:hover { background: var(--bg); }
 .menu svg { width: 17px; height: 17px; fill: none; stroke: var(--muted); stroke-width: 1.8; }
@@ -325,6 +326,8 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
       <button id="openImport"><svg viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M4 17v3h16v-3"/></svg>Importar</button>
       <button id="openDelete" class="danger"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>Eliminar</button>
       <button id="goToday"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Ir al mes actual</button>
+      <button id="installApp" hidden><svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M12 7v8M8.5 11.5 12 15l3.5-3.5"/></svg>Instalar app</button>
+      <div class="menu-ver" id="menuVer"></div>
     </div>
   </div>
 </header>
@@ -494,6 +497,17 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 <div class="pick" id="pick" hidden><button data-v="✓" aria-label="Correcto">✓</button><button data-v="✗" aria-label="Incorrecto">✗</button><button class="clear" data-v="" aria-label="Vaciar">Vaciar</button></div>
 
 <div class="pick pick3" id="pick3" hidden></div>
+
+<!-- How to install -->
+<div class="scrim" id="instScrim" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="instTitle">
+    <h2 id="instTitle">Instalar la app</h2>
+    <p class="sub" id="instIos" hidden>En iPhone, con <b>Safari</b>: toca <b>Compartir</b> (el cuadrado con la flecha hacia arriba), baja y toca <b>Añadir a pantalla de inicio</b>, luego <b>Añadir</b>. Desde Chrome u otras apps de iPhone no se puede instalar: abre este enlace en Safari.</p>
+    <p class="sub" id="instAndroid" hidden>En Android, con <b>Chrome</b>: toca el menú <b>⋮</b> y luego <b>Instalar app</b> (o <b>Añadir a pantalla de inicio</b>).</p>
+    <p class="sub">Una vez instalada, ábrela siempre desde su icono: los datos se guardan en el teléfono y la app se actualiza sola cuando tiene internet.</p>
+    <div class="row-x"><button class="link" id="instClose">Cerrar</button></div>
+  </div>
+</div>
 
 <!-- Import -->
 <div class="scrim" id="impScrim" hidden>
@@ -1463,6 +1477,29 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   };
   document.addEventListener("click", e => { if (!menu.hidden && !menu.contains(e.target)) setMenu(false); });
   $("goToday").onclick = () => { setMenu(false); viewKey = curKey; render(); };
+
+  // ---- installing and version ----
+  // The menu says which version is running and whether it is the installed app or the browser;
+  // in the browser it offers to install (the system prompt where there is one, else the steps).
+  const standalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  let installEvt = null;
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); installEvt = e; });
+  window.addEventListener("appinstalled", () => { installEvt = null; toast("App instalada."); });
+  function drawVersion() {
+    const inArtifact = !!(window.claude && window.claude.use);
+    $("installApp").hidden = standalone() || inArtifact;
+    $("menuVer").innerHTML = `Versión ${APP_VERSION}${window.APP_BUILD ? " · " + window.APP_BUILD : ""}<br>`
+      + (inArtifact ? "Abierta en claude.ai" : standalone() ? "Abierta como app instalada" : "Abierta en el navegador, sin instalar");
+  }
+  $("dotsBtn").addEventListener("click", drawVersion);
+  $("installApp").onclick = async () => {
+    setMenu(false);
+    if (installEvt) { installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {} installEvt = null; return; }
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    $("instIos").hidden = !ios; $("instAndroid").hidden = ios;
+    $("instScrim").hidden = false;
+  };
+  $("instClose").onclick = () => { $("instScrim").hidden = true; };
   // the generation settings belong to the numbers section: open it there from any section
   $("openSettings").onclick = () => { setMenu(false); openPin(() => sec().type === "s2" ? openSettings2() : sec().type === "s3" ? openSettings3() : openSettings()); };
   $("openDelete").onclick = () => { setMenu(false); openPin(openDelete); };
