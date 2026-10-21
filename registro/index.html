@@ -219,8 +219,9 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 .s2 .day.last { border-right: 0; }
 .s2 .day.gen { background: #fff1bf; color: #17222b; }
 .s2 .day.check { cursor: pointer; font-size: 1rem; }
-.vals { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 4px; }
-.vals .val { display: inline-flex; align-items: center; gap: 2px; padding: 4px 4px 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg); font-family: var(--f-num); font-size: .88rem; }
+/* lists in the settings run one item under the other */
+.vals { display: grid; gap: 6px; margin: 2px 0 4px; }
+.vals .val { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 4px 4px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); font-family: var(--f-num); font-size: .92rem; }
 .vals .val button { border: 0; background: none; width: 26px; height: 26px; border-radius: 50%; color: var(--muted); font-size: 1rem; line-height: 1; }
 .vals .val button:hover { color: var(--danger); background: var(--surface); }
 .vals .none { color: var(--muted); font-size: .88rem; }
