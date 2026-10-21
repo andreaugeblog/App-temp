@@ -64,11 +64,18 @@ button:focus-visible, input:focus-visible, select:focus-visible, [contenteditabl
 .menu button:hover { background: var(--bg); }
 .menu svg { width: 17px; height: 17px; fill: none; stroke: var(--muted); stroke-width: 1.8; }
 
+.secs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; margin-bottom: 12px; scrollbar-width: none; }
+.secs::-webkit-scrollbar { display: none; }
+.chip { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 14px; font-weight: 500; font-size: .88rem; color: var(--muted); max-width: 16em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip[aria-current="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.chip.add { border-style: dashed; color: var(--accent); }
+.sechead { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.secname { flex: 1 1 14em; min-width: 0; font: 700 1.35rem/1.2 var(--f-ui); color: var(--ink); background: transparent; border: 0; border-bottom: 2px solid transparent; padding: 4px 0; border-radius: 0; }
+.secname::placeholder { color: var(--muted); opacity: .55; }
+.secname:hover { border-bottom-color: var(--line); }
+.secname:focus { outline: none; border-bottom-color: var(--accent); }
 @media (max-width: 560px) {
-  .bar { flex-wrap: wrap; }
-  .bar h1 { flex-basis: calc(100% - 56px); order: 1; }
-  .menu-wrap { order: 2; }
-  .month { order: 3; flex: 1; justify-content: space-between; }
+  .month { flex: 1; justify-content: space-between; }
 }
 
 /* Sheet */
@@ -155,6 +162,8 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
 .opts .head { display: flex; align-items: center; gap: 10px; font-weight: 500; }
 .opts input[type=radio] { width: 18px; height: 18px; accent-color: var(--danger); margin: 0; }
 .opts .inline { padding-left: 28px; font-size: .9rem; }
+.opts.blue > label:has(input[type=radio]:checked) { border-color: var(--accent); }
+.opts.blue input[type=radio] { accent-color: var(--accent); }
 .file { display: grid; place-items: center; gap: 4px; padding: 22px 12px; border: 2px dashed var(--line); border-radius: 12px; text-align: center; cursor: pointer; margin-bottom: 14px; color: var(--muted); }
 .file b { color: var(--accent); }
 .file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
@@ -164,12 +173,7 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
 </style>
 
 <header class="bar">
-  <h1>Registro Mensile<small id="sheetLabel">Foglio del mese</small></h1>
-  <div class="month">
-    <button class="icon-btn" id="prevM" aria-label="Mese precedente">&#8249;</button>
-    <b id="monthName"></b>
-    <button class="icon-btn" id="nextM" aria-label="Mese successivo">&#8250;</button>
-  </div>
+  <h1>Registro Mensile<small id="sheetLabel">Sezione numeri</small></h1>
   <div class="menu-wrap">
     <button class="dots" id="dotsBtn" aria-label="Menu" aria-haspopup="true" aria-expanded="false">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
@@ -183,6 +187,17 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
     </div>
   </div>
 </header>
+
+<nav class="secs" id="secs" aria-label="Sezioni"></nav>
+
+<div class="sechead">
+  <input id="secName" class="secname" placeholder="Nome della sezione" autocomplete="off" aria-label="Nome della sezione">
+  <div class="month">
+    <button class="icon-btn" id="prevM" aria-label="Mese precedente">&#8249;</button>
+    <b id="monthName"></b>
+    <button class="icon-btn" id="nextM" aria-label="Mese successivo">&#8250;</button>
+  </div>
+</div>
 
 <div class="sheet" id="sheet"><table id="grid"></table></div>
 
@@ -228,6 +243,16 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
       <div class="inline">da <input class="num" id="bMin" inputmode="decimal"> a <input class="num" id="bMax" inputmode="decimal"></div>
     </div>
     <label class="check"><input type="checkbox" id="overwrite"> Sovrascrivi anche le caselle già compilate</label>
+    <div class="field"><span>Quando cambiano le ultime due voci, aggiorna</span>
+      <div class="opts blue" id="raOpts">
+        <label><span class="head"><input type="radio" name="raMode" value="month"> Solo il mese corrente</span></label>
+        <label><span class="head"><input type="radio" name="raMode" value="from"> Da un mese fino a oggi</span>
+          <span class="inline">da <select id="raFromOnly"></select></span></label>
+        <label><span class="head"><input type="radio" name="raMode" value="range"> Da un mese a un altro</span>
+          <span class="inline">da <select id="raFrom"></select> a <select id="raTo"></select></span></label>
+        <label><span class="head"><input type="radio" name="raMode" value="all"> Tutti i mesi</span></label>
+      </div>
+    </div>
     <div class="summary" id="summary"></div>
     <button class="go" id="goBtn">Vai pure</button>
     <div class="row-x"><button class="link" id="setClose">Chiudi</button></div>
@@ -258,6 +283,7 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
         <span class="inline">da <select id="delFrom"></select> a <select id="delTo"></select></span></label>
       <label><span class="head"><input type="radio" name="delMode" value="all"> Elimina tutto</span>
         <span class="inline"><input type="checkbox" id="delNames" style="width:18px;height:18px;accent-color:var(--danger)"> Cancella anche i nomi delle voci</span></label>
+      <label id="delSecOpt"><span class="head"><input type="radio" name="delMode" value="section"> Elimina l'intera sezione “<span id="delSecName"></span>”</span></label>
     </div>
     <div class="summary" id="delSummary"></div>
     <button class="go red" id="delGo">Elimina</button>
@@ -311,24 +337,40 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
       rows: Array.from({ length: 10 }, () => ({ id: uid(), name: "" })),
       startMonth: shift(curKey, -6),
       ranges: { a: [-21.2, -18.3], b: [3.3, 3.6] },
-      overwrite: false
+      overwrite: false,
+      reassign: { mode: "all", from: shift(curKey, -6), to: curKey }
     };
   }
 
   // ---- state & storage ----
+  // Each section has its own rows, settings and months. The first section ("main")
+  // keeps the original paths so data saved before sections existed stays in place.
+  let sections = [{ id: "main", name: "", type: "numeri" }];
+  let active = "main";
   let config = defaults();
   let months = {};          // "YYYY-MM" -> { cells: { rowId: { day: number } } }
   let viewKey = curKey;
   let db = null;
 
+  const cfgPath = (sid = active) => sid === "main" ? "registro/config" : "sezioni/" + sid;
+  const monthsCol = (sid = active) => sid === "main" ? "mesi" : "sezioni/" + sid + "/mesi";
+  const monthPath = (k, sid = active) => monthsCol(sid) + "/" + k;
+  const lsKey = (sid = active) => sid === "main" ? LS : LS + ":" + sid;
+
   function loadLocal() {
+    config = defaults(); months = {};
     try {
-      const raw = localStorage.getItem(LS);
-      if (raw) { const s = JSON.parse(raw); if (s.config) config = s.config; if (s.months) months = s.months; }
+      const raw = localStorage.getItem(lsKey());
+      if (raw) { const s = JSON.parse(raw); if (s.config) config = Object.assign(defaults(), s.config); if (s.months) months = s.months; }
+      const idx = JSON.parse(localStorage.getItem(LS + ":sezioni") || "null");
+      if (idx && idx.list && idx.list.length) sections = idx.list;
     } catch (e) {}
   }
   function saveLocal() {
-    try { localStorage.setItem(LS, JSON.stringify({ config, months })); } catch (e) {}
+    try {
+      localStorage.setItem(lsKey(), JSON.stringify({ config, months }));
+      localStorage.setItem(LS + ":sezioni", JSON.stringify({ list: sections, active }));
+    } catch (e) {}
   }
 
   const chains = {};
@@ -353,14 +395,59 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
       .catch(() => toast("Eliminazione non riuscita, riprova."));
     return chains[path];
   }
-  const timers = {};
-  function later(key, fn, ms = 600) { clearTimeout(timers[key]); timers[key] = setTimeout(() => { delete timers[key]; fn(); }, ms); }
-  const saveConfig = () => later("config", () => writeDoc("registro/config", config));
-  const saveMonth = k => later("m" + k, () => writeDoc("mesi/" + k, months[k] || { cells: {} }));
+  const timers = {}, pending = {};
+  function later(key, fn, ms = 600) {
+    clearTimeout(timers[key]);
+    pending[key] = fn;
+    timers[key] = setTimeout(() => { delete timers[key]; delete pending[key]; fn(); }, ms);
+  }
+  // run every scheduled save now (before switching section)
+  function flush() { Object.keys(pending).forEach(k => { clearTimeout(timers[k]); delete timers[k]; const fn = pending[k]; delete pending[k]; fn(); }); }
+  const saveConfig = () => { const path = cfgPath(), c = config; later("config", () => writeDoc(path, c)); };
+  const saveMonth = k => { const path = monthPath(k), ms = months; later("m" + k, () => writeDoc(path, ms[k] || { cells: {} })); };
+  const saveIndex = () => later("idx", () => writeDoc("registro/sezioni", { list: sections }));
 
   // ---- rendering ----
   function namedRows() { return config.rows.filter(r => r.name.trim()); }
   function bSet() { return new Set(namedRows().slice(-2).map(r => r.id)); }
+  const bSig = () => [...bSet()].join(",");
+
+  // ---- automatic update of the last two rows ----
+  function reassignScope() {
+    const r = config.reassign || {};
+    const keys = Object.keys(months);
+    if (r.mode === "month") return keys.filter(k => k === curKey);
+    if (r.mode === "from") return keys.filter(k => k >= r.from && k <= curKey);
+    if (r.mode === "range") { const [a, b] = [r.from, r.to].sort(); return keys.filter(k => k >= a && k <= b); }
+    return keys;
+  }
+  // distance from a value to a [lo, hi] interval
+  const gap = (v, [lo, hi]) => v < lo ? lo - v : v > hi ? v - hi : 0;
+  function checkReassign() {
+    const sig = bSig();
+    if (config.bSig === undefined) { config.bSig = sig; saveConfig(); return; }
+    if (sig === config.bSig) return;
+    config.bSig = sig;
+    const b = bSet(), A = config.ranges.a, B = config.ranges.b;
+    let changed = 0;
+    for (const k of reassignScope()) {
+      const cells = months[k] && months[k].cells; if (!cells) continue;
+      let touched = false;
+      for (const r of namedRows()) {
+        const row = cells[r.id]; if (!row) continue;
+        const wantB = b.has(r.id), [lo, hi] = wantB ? B : A;
+        for (const d in row) {
+          const isB = gap(row[d], B) < gap(row[d], A);
+          if (isB !== wantB) { row[d] = rand(lo, hi); changed++; touched = true; }
+        }
+      }
+      if (touched) saveMonth(k);
+    }
+    saveConfig();
+    refresh();
+    if (changed) toast(`Ultime due voci aggiornate: ${changed} valori convertiti.`);
+  }
+  const queueReassign = (ms = 1200) => later("reassign", checkReassign, ms);
 
   function render() {
     const nDays = daysIn(viewKey);
@@ -415,6 +502,7 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
       const b = bSet();
       document.querySelectorAll("#grid tbody tr").forEach(x => x.classList.toggle("b", b.has(x.dataset.row)));
       saveConfig();
+      queueReassign();
     } else if (t.tagName === "INPUT") {
       const v = num(t.value);
       if (v === undefined) return;
@@ -430,7 +518,7 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
   $("grid").addEventListener("focusout", e => {
     const t = e.target;
     if (t.tagName === "INPUT") { const v = num(t.value); t.value = v == null ? "" : fmt(v); }
-    if (t.classList.contains("name-in")) { t.textContent = t.textContent.trim(); }
+    if (t.classList.contains("name-in")) { t.textContent = t.textContent.trim(); if (timers.reassign) queueReassign(50); }
   });
   $("grid").addEventListener("paste", e => {
     if (!e.target.classList.contains("name-in")) return;
@@ -450,7 +538,7 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
       return;
     }
     $("delRow").dataset.armed = ""; $("delRow").textContent = "− Togli ultima voce";
-    config.rows.pop(); render(); saveConfig();
+    config.rows.pop(); render(); saveConfig(); checkReassign();
   };
 
   $("prevM").onclick = () => { viewKey = shift(viewKey, -1); render(); };
@@ -512,6 +600,14 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
     $("aMin").value = fmt(config.ranges.a[0]); $("aMax").value = fmt(config.ranges.a[1]);
     $("bMin").value = fmt(config.ranges.b[0]); $("bMax").value = fmt(config.ranges.b[1]);
     $("overwrite").checked = !!config.overwrite;
+    const ra = config.reassign || defaults().reassign;
+    const span = monthSpan();
+    [ra.from, ra.to].forEach(k => { if (k && !span.includes(k)) span.push(k); });
+    span.sort();
+    const opts = span.map(k => `<option value="${k}">${label(k)}</option>`).join("");
+    ["raFromOnly", "raFrom", "raTo"].forEach(id => $(id).innerHTML = opts);
+    $("raFromOnly").value = ra.from; $("raFrom").value = ra.from; $("raTo").value = ra.to;
+    (document.querySelector(`input[name="raMode"][value="${ra.mode}"]`) || document.querySelector('input[name="raMode"][value="all"]')).checked = true;
     summarize();
     $("setScrim").hidden = false;
   }
@@ -541,6 +637,14 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
     $("goBtn").disabled = !n;
   }
   ["startMonth", "startYear", "aMin", "aMax", "bMin", "bMax", "overwrite"].forEach(id => $(id).addEventListener("input", () => { summarize(); saveConfig(); }));
+  $("raOpts").addEventListener("input", e => {
+    const mode = e.target.id === "raFromOnly" ? "from" : e.target.matches("#raFrom, #raTo") ? "range" : null;
+    if (mode) document.querySelector(`input[name="raMode"][value="${mode}"]`).checked = true;
+    const m = document.querySelector('input[name="raMode"]:checked').value;
+    config.reassign = { mode: m, from: m === "from" ? $("raFromOnly").value : $("raFrom").value, to: $("raTo").value };
+    if (m === "from") $("raFrom").value = $("raFromOnly").value; else $("raFromOnly").value = $("raFrom").value;
+    saveConfig();
+  });
   $("setClose").onclick = () => { $("setScrim").hidden = true; };
 
   function rand(lo, hi) { return Math.round((lo + Math.random() * (hi - lo)) * 10) / 10; }
@@ -561,9 +665,10 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
           if (config.overwrite || row[d] == null) { row[d] = rand(lo, hi); count++; }
         }
       }
-      writeDoc("mesi/" + k, m);
+      writeDoc(monthPath(k), m);
     }
-    writeDoc("registro/config", config);
+    config.bSig = bSig();
+    writeDoc(cfgPath(), config);
     $("setScrim").hidden = true;
     viewKey = curKey; render();
     toast(count ? `Fatto: ${count} valori inseriti (${list.length} ${list.length === 1 ? "foglio" : "fogli"}).` : "Nessuna casella vuota da riempire.");
@@ -583,7 +688,7 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
   function delTargets() {
     const mode = document.querySelector('input[name="delMode"]:checked').value;
     if (mode === "month") return [viewKey];
-    if (mode === "all") return Object.keys(months);
+    if (mode === "all" || mode === "section") return Object.keys(months);
     const [a, b] = [$("delFrom").value, $("delTo").value].sort();
     return Object.keys(months).filter(k => k >= a && k <= b);
   }
@@ -594,8 +699,9 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
     const sheets = t.filter(filled).length;
     let txt = n ? `Verranno cancellati <b>${n} valori</b> in <b>${sheets} ${sheets === 1 ? "foglio" : "fogli"}</b>.` : "Non ci sono valori da cancellare qui.";
     if (mode === "all" && $("delNames").checked) txt += " Anche i nomi delle voci verranno cancellati.";
+    if (mode === "section") txt = `La sezione “${secTitle()}” sparisce con le sue voci e ${n} valori.`;
     $("delSummary").innerHTML = txt;
-    $("delGo").disabled = !n && !(mode === "all" && $("delNames").checked);
+    $("delGo").disabled = !n && !(mode === "all" && $("delNames").checked) && mode !== "section";
     disarmDel();
   }
   function disarmDel() { $("delGo").dataset.armed = ""; $("delGo").textContent = "Elimina"; }
@@ -607,6 +713,8 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
     $("delCur").textContent = label(viewKey);
     document.querySelector('input[name="delMode"][value="month"]').checked = true;
     $("delNames").checked = false;
+    $("delSecOpt").hidden = sections.length < 2;
+    $("delSecName").textContent = secTitle();
     delSummary();
     $("delScrim").hidden = false;
   }
@@ -623,10 +731,23 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
     }
     const mode = document.querySelector('input[name="delMode"]:checked').value;
     const t = delTargets();
-    t.forEach(k => { clearTimeout(timers["m" + k]); delete timers["m" + k]; delete months[k]; deleteDoc("mesi/" + k); });
+    t.forEach(k => { clearTimeout(timers["m" + k]); delete timers["m" + k]; delete pending["m" + k]; delete months[k]; deleteDoc(monthPath(k)); });
+    if (mode === "section") {
+      const gone = active, name = secTitle();
+      clearTimeout(timers.config); delete timers.config; delete pending.config;
+      deleteDoc(cfgPath());
+      try { localStorage.removeItem(lsKey()); } catch (e) {}
+      sections = sections.filter(x => x.id !== gone);
+      writeDoc("registro/sezioni", { list: sections });
+      $("delScrim").hidden = true;
+      switchSection(sections[0].id, true);
+      toast(`Sezione “${name}” eliminata.`);
+      return;
+    }
     if (mode === "all" && $("delNames").checked) {
       config.rows = config.rows.map(() => ({ id: uid(), name: "" }));
-      writeDoc("registro/config", config);
+      config.bSig = bSig();
+      writeDoc(cfgPath(), config);
     }
     saveLocal();
     $("delScrim").hidden = true; render();
@@ -712,11 +833,12 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
         const v = cells[r.id] = {};
         for (const d in row.vals) if (+d <= n) { v[d] = row.vals[d]; count++; }
       });
-      clearTimeout(timers["m" + key]); delete timers["m" + key];
+      clearTimeout(timers["m" + key]); delete timers["m" + key]; delete pending["m" + key];
       months[key] = { cells };
-      writeDoc("mesi/" + key, months[key]);
+      writeDoc(monthPath(key), months[key]);
     }
-    writeDoc("registro/config", config);
+    config.bSig = bSig();
+    writeDoc(cfgPath(), config);
     viewKey = picks[0].key;
     $("impScrim").hidden = true; render();
     toast(`Importati ${count} valori in ${picks.length} ${picks.length === 1 ? "foglio" : "fogli"}.`);
@@ -780,7 +902,7 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
       const wb = XLSX.utils.book_new();
       sel.forEach(k => XLSX.utils.book_append_sheet(wb, buildSheet(XLSX, k), label(k)));
       const data = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-      const filename = "Registro " + (sel.length > 1 ? label(sel[0]) + " - " + label(sel.at(-1)) : label(sel[0])) + ".xlsx";
+      const filename = (secTitle() === "Sezione senza nome" ? "Registro" : secTitle()) + " " + (sel.length > 1 ? label(sel[0]) + " - " + label(sel.at(-1)) : label(sel[0])) + ".xlsx";
       await saveFile(filename, data);
     } catch (e) {
       const code = e && e.code;
@@ -809,9 +931,67 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
   let toastT;
   function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3200); }
 
+  // ---- sections ----
+  const sec = () => sections.find(x => x.id === active) || sections[0];
+  const secTitle = () => (sec().name || "").trim() || "Sezione senza nome";
+  function renderSections() {
+    $("secs").innerHTML = sections.map(x => `<button class="chip" data-sid="${x.id}" aria-current="${x.id === active}">${esc((x.name || "").trim() || "Sezione senza nome")}</button>`).join("")
+      + '<button class="chip add" id="addSec">+ Nuova sezione</button>';
+    if (document.activeElement !== $("secName")) $("secName").value = sec().name || "";
+  }
+  function esc(t) { return t.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); }
+  $("secs").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.id === "addSec") {
+      const id = "s" + uid();
+      sections.push({ id, name: "", type: "numeri" });
+      writeDoc("registro/sezioni", { list: sections });
+      switchSection(id);
+      $("secName").focus();
+      return;
+    }
+    if (b.dataset.sid !== active) switchSection(b.dataset.sid);
+  });
+  $("secName").addEventListener("input", () => {
+    sec().name = $("secName").value;
+    const chip = $("secs").querySelector(`[data-sid="${active}"]`);
+    if (chip) chip.textContent = secTitle();
+    saveIndex(); saveLocal();
+  });
+  $("secName").addEventListener("keydown", e => { if (e.key === "Enter") $("secName").blur(); });
+
+  let unsubs = [];
+  function switchSection(id, skipFlush) {
+    if (!skipFlush) flush();
+    unsubs.forEach(u => u()); unsubs = [];
+    active = id; viewKey = curKey;
+    loadLocal(); saveLocal();
+    renderSections(); render();
+    subscribeSection();
+  }
+  function subscribeSection() {
+    if (!db) return;
+    const sid = active;
+    unsubs.push(db.doc(cfgPath(sid)).onSnapshot(s => {
+      if (sid !== active || s.metadata.hasPendingWrites || timers.config) return;
+      if (s.exists) { config = Object.assign(defaults(), JSON.parse(JSON.stringify(s.data()))); saveLocal(); refresh(); }
+    }, () => {}));
+    unsubs.push(db.collection(monthsCol(sid)).onSnapshot(s => {
+      if (sid !== active || s.metadata.hasPendingWrites) return;
+      const next = {};
+      s.docs.forEach(doc => { next[doc.id] = JSON.parse(JSON.stringify(doc.data())); });
+      // keep months typed here that are still waiting to be saved
+      Object.keys(months).forEach(k => { if (timers["m" + k]) next[k] = months[k]; });
+      months = next; saveLocal(); refresh();
+    }, () => {}));
+  }
+
   // ---- boot ----
   fillSelects();
+  try { const idx = JSON.parse(localStorage.getItem(LS + ":sezioni") || "null"); if (idx && idx.active) active = idx.active; } catch (e) {}
   loadLocal();
+  if (!sections.some(x => x.id === active)) { active = sections[0].id; loadLocal(); }
+  renderSections();
   render();
 
   const claudeApi = window.claude;
@@ -820,18 +1000,15 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
     db = d;
     if (!db) { $("status").textContent = "Salvato solo su questo dispositivo."; return; }
     $("status").textContent = "Salvataggio automatico attivo.";
-    db.doc("registro/config").onSnapshot(s => {
-      if (s.metadata.hasPendingWrites || timers.config) return;
-      if (s.exists) { config = Object.assign(defaults(), JSON.parse(JSON.stringify(s.data()))); saveLocal(); refresh(); }
+    db.doc("registro/sezioni").onSnapshot(s => {
+      if (s.metadata.hasPendingWrites || timers.idx || !s.exists) return;
+      const list = JSON.parse(JSON.stringify(s.data().list || []));
+      if (!list.length) return;
+      sections = list;
+      if (!sections.some(x => x.id === active)) switchSection(sections[0].id);
+      else { renderSections(); saveLocal(); }
     }, () => {});
-    db.collection("mesi").onSnapshot(s => {
-      if (s.metadata.hasPendingWrites) return;
-      const next = {};
-      s.docs.forEach(doc => { next[doc.id] = JSON.parse(JSON.stringify(doc.data())); });
-      // keep months typed here that are still waiting to be saved
-      Object.keys(months).forEach(k => { if (timers["m" + k]) next[k] = months[k]; });
-      months = next; saveLocal(); refresh();
-    }, () => {});
+    subscribeSection();
   }).catch(() => { $("status").textContent = "Salvato solo su questo dispositivo."; });
 })();
 </script>
