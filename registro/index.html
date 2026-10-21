@@ -404,10 +404,8 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 <div class="scrim" id="setScrim" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="setTitle">
     <h2 id="setTitle">Generar valores</h2>
-    <p class="sub">Rellena las hojas desde el mes de inicio hasta hoy.</p>
-    <label class="field"><span>Mes de inicio</span>
-      <div class="inline"><select id="startMonth"></select><select id="startYear"></select></div>
-    </label>
+    <p class="sub">Rellena las hojas desde el día de inicio hasta hoy.</p>
+    <label class="field"><span>Día de inicio</span><input type="date" id="startDate" class="num" style="width:auto;text-align:left"></label>
     <div class="field"><span>Elementos normales</span>
       <div class="inline">de <input class="num" id="aMin" inputmode="decimal"> a <input class="num" id="aMax" inputmode="decimal"></div>
     </div>
@@ -1461,16 +1459,11 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   $("pinCancel").onclick = closePin;
 
   // ---- settings & generation ----
-  function fillSelects() {
-    $("startMonth").innerHTML = MESI.map((n, i) => `<option value="${i}">${n}</option>`).join("");
-    let ys = "";
-    for (let y = now.getFullYear() - 3; y <= now.getFullYear(); y++) ys += `<option value="${y}">${y}</option>`;
-    $("startYear").innerHTML = ys;
-  }
+  function fillSelects() {}
+  // generation starts on config.startMonth, day config.startDay (1 when not set)
+  const startDay = () => config.startDay || 1;
   function openSettings() {
-    const { y, m } = parseKey(config.startMonth);
-    if (![...$("startYear").options].some(o => +o.value === y)) $("startYear").insertAdjacentHTML("afterbegin", `<option value="${y}">${y}</option>`);
-    $("startMonth").value = m; $("startYear").value = y;
+    $("startDate").value = config.startMonth + "-" + String(Math.min(startDay(), daysIn(config.startMonth))).padStart(2, "0");
     $("aMin").value = fmt(config.ranges.a[0]); $("aMax").value = fmt(config.ranges.a[1]);
     $("bMin").value = fmt(config.ranges.b[0]); $("bMax").value = fmt(config.ranges.b[1]);
     $("overwrite").checked = !!config.overwrite;
@@ -1486,7 +1479,8 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     $("setScrim").hidden = false;
   }
   function readSettings() {
-    config.startMonth = mk(+$("startYear").value, +$("startMonth").value);
+    const sd = $("startDate").value;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(sd)) { config.startMonth = sd.slice(0, 7); config.startDay = +sd.slice(8); }
     const r = ["aMin", "aMax", "bMin", "bMax"].map(id => num($(id).value));
     if (r.every(v => typeof v === "number")) {
       config.ranges = { a: [Math.min(r[0], r[1]), Math.max(r[0], r[1])], b: [Math.min(r[2], r[3]), Math.max(r[2], r[3])] };
@@ -1503,14 +1497,15 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     readSettings();
     const n = namedRows().length;
     const list = monthsToFill();
-    const range = list.length > 1 ? `de <b>${label(list[0])}</b> al <b>${now.getDate()} de ${label(curKey)}</b>` : `del 1 al <b>${now.getDate()} de ${label(curKey)}</b>`;
+    const from = config.startMonth <= curKey ? startDay() : 1;
+    const range = list.length > 1 ? `del <b>${from} de ${label(list[0])}</b> al <b>${now.getDate()} de ${label(curKey)}</b>` : `del ${from} al <b>${now.getDate()} de ${label(curKey)}</b>`;
     const r = config.ranges;
     $("summary").innerHTML = n
       ? `Rellenará ${range} para <b>${n} ${n === 1 ? "elemento" : "elementos"}</b> y corregirá los valores fuera de franja.<br>Valores entre ${fmt(r.a[0])} y ${fmt(r.a[1])}` + (n > 2 ? `, los dos últimos entre ${fmt(r.b[0])} y ${fmt(r.b[1])}.` : `; con ${n} ${n === 1 ? "elemento" : "elementos"} todos usan ${fmt(r.b[0])}–${fmt(r.b[1])}.`)
       : "Escribe al menos un nombre en la columna <b>Elemento</b>: las filas sin nombre no se rellenan.";
     $("goBtn").disabled = !n;
   }
-  ["startMonth", "startYear", "aMin", "aMax", "bMin", "bMax", "overwrite"].forEach(id => $(id).addEventListener("input", () => { summarize(); saveConfig(); }));
+  ["startDate", "aMin", "aMax", "bMin", "bMax", "overwrite"].forEach(id => $(id).addEventListener("input", () => { summarize(); saveConfig(); }));
   $("raOpts").addEventListener("input", e => {
     const mode = e.target.id === "raFromOnly" ? "from" : e.target.matches("#raFrom, #raTo") ? "range" : null;
     if (mode) document.querySelector(`input[name="raMode"][value="${mode}"]`).checked = true;
@@ -1621,11 +1616,12 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     const list = monthsToFill();
     for (const k of list) {
       const last = k === curKey ? now.getDate() : daysIn(k);
+      const first = k === config.startMonth ? startDay() : 1;   // days before the start day are left alone
       const m = months[k] = { cells: JSON.parse(JSON.stringify((months[k] && months[k].cells) || {})) };
       for (const r of rows) {
         const row = m.cells[r.id] || (m.cells[r.id] = {});
         const [lo, hi] = b.has(r.id) ? config.ranges.b : config.ranges.a;
-        for (let d = 1; d <= last; d++) {
+        for (let d = first; d <= last; d++) {
           if (config.overwrite || row[d] == null) { row[d] = rand(lo, hi); count++; }
           else if (row[d] < lo || row[d] > hi) { row[d] = rand(lo, hi); fixed++; }
         }
