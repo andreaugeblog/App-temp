@@ -635,6 +635,7 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
       const vals = arr(k);
       for (let i = 0; i < 31; i++) { const el = $(k + "-" + i); if (el && document.activeElement !== el) el.value = vals[i] || ""; }
     }
+    fitAll();
   }
   // Left macro column = two sub-columns of 12 cells each. Groups: [first row, number of rows].
   // Single rows have no lines between them; a group spanning more rows gets its own outline.
@@ -701,8 +702,16 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     $("s2Table").innerHTML = h;
   }
   buildS2Table();
+  // a cell with more lines makes its row taller (a merged cell spreads it over its rows)
+  function fitCell(t) {
+    t.style.height = "auto"; t.style.minHeight = "0";
+    const h = t.scrollHeight;
+    t.style.height = ""; t.style.minHeight = h + "px";
+  }
+  const fitAll = () => $("s2Table").querySelectorAll("textarea").forEach(fitCell);
   $("s2Table").addEventListener("input", e => {
     const t = e.target, i = +t.dataset.i;
+    if (t.tagName === "TEXTAREA") fitCell(t);
     if (t.classList.contains("macro-title")) {
       const k = +t.dataset.t;
       config.macro = (config.macro || ["", "", ""]).slice(); config.macro[k] = t.value; saveConfig();
