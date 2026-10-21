@@ -192,10 +192,11 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
 .rows12 input::placeholder { color: var(--muted); opacity: .45; font-family: var(--f-num); font-size: .8rem; }
 .rows12 input:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
 .macro + .macro { border-left: 1px solid var(--line); }
-.macro-title { width: 100%; border: 0; border-bottom: 1px solid var(--line); background: var(--today); padding: 10px 12px; font: 600 .92rem var(--f-ui); color: var(--ink); text-align: center; border-radius: 0; }
+.macro-title { width: 100%; border: 0; border-bottom: 1px solid var(--line); background: var(--surface); padding: 10px 12px; font: 600 .92rem var(--f-ui); color: var(--ink); text-align: center; border-radius: 0; }
 .macro-title::placeholder { color: var(--muted); }
 .macro-title:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
-.macro-body { flex: 1; min-height: 9em; }
+.macro-body { flex: 1; min-height: 9em; width: 100%; border: 0; resize: none; background: var(--surface); color: var(--ink); font: inherit; line-height: 1.45; padding: 9px 10px; border-radius: 0; }
+.macro-body:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
 @media (max-width: 420px) { .s2-when { min-width: 4.6em; } .s2-when span:first-child { font-size: 1rem; } }
 
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 60; background: var(--ink); color: var(--bg); padding: 11px 16px; border-radius: 10px; font-size: .9rem; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
@@ -242,8 +243,8 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
   </div>
   <div class="s2-scroll">
     <div class="s2-table" id="s2Table">
-      <div class="macro m1"><input id="macro0" class="macro-title" placeholder="Titolo" aria-label="Titolo macro colonna 1"><div class="macro-body"></div></div>
-      <div class="macro m2"><input id="macro1" class="macro-title" placeholder="Titolo" aria-label="Titolo macro colonna 2">
+      <div class="macro m1"><input id="macro0" class="macro-title" aria-label="Titolo macro colonna 1"><textarea id="c1Text" class="macro-body" aria-label="Contenuto macro colonna 1"></textarea></div>
+      <div class="macro m2"><input id="macro1" class="macro-title" aria-label="Titolo macro colonna 2">
         <div class="rows12" id="rows12"></div>
       </div>
     </div>
@@ -624,10 +625,16 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     grow(t);
     const mt = config.macro || [];
     [0, 1].forEach(i => { const el = $("macro" + i); if (document.activeElement !== el) el.value = mt[i] || ""; });
+    const c1 = $("c1Text");
+    if (document.activeElement !== c1) c1.value = (months[viewKey] && months[viewKey].c1) || "";
     const r12 = (months[viewKey] && months[viewKey].r12) || [];
     for (let i = 0; i < 12; i++) { const el = $("r12-" + i); if (document.activeElement !== el) el.value = r12[i] || ""; }
   }
-  $("rows12").innerHTML = Array.from({ length: 12 }, (_, i) => `<input id="r12-${i}" data-i="${i}" size="1" placeholder="${i + 1}" aria-label="Riga ${i + 1}">`).join("");
+  $("rows12").innerHTML = Array.from({ length: 12 }, (_, i) => `<input id="r12-${i}" data-i="${i}" size="1" aria-label="Riga ${i + 1}">`).join("");
+  $("c1Text").addEventListener("input", e => {
+    const m = months[viewKey] || (months[viewKey] = {});
+    m.c1 = e.target.value; saveMonth(viewKey);
+  });
   $("rows12").addEventListener("input", e => {
     const m = months[viewKey] || (months[viewKey] = {});
     m.r12 = (m.r12 || Array(12).fill("")).slice(); m.r12[+e.target.dataset.i] = e.target.value;
@@ -970,7 +977,8 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
   function filled(k) {
     const c = (months[k] && months[k].cells) || {};
     const note = (months[k] && months[k].note && months[k].note.trim() ? 1 : 0)
-      + ((months[k] && months[k].r12) || []).filter(v => v && v.trim()).length;
+      + ((months[k] && months[k].r12) || []).filter(v => v && v.trim()).length
+      + (months[k] && months[k].c1 && months[k].c1.trim() ? 1 : 0);
     return note + Object.values(c).reduce((n, row) => n + Object.keys(row).length, 0);
   }
   function openExport() {
