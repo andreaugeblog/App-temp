@@ -179,8 +179,9 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
 /* month and year set like the month label of the first section */
 .s2-when { display: grid; text-align: center; min-width: 5.6em; line-height: 1.25; font-weight: 600; font-size: .95rem; }
 .s2 #s2Text {
-  width: 100%; min-height: 4.8em; resize: vertical; font: inherit; line-height: 1.45; color: var(--ink);
-  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; overflow: hidden;
+  /* starts as tall as the month selector beside it and grows downward with the text */
+  width: 100%; height: 38px; min-height: 38px; resize: none; font: inherit; line-height: 1.45; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 7px 12px; overflow: hidden;
 }
 .s2 #s2Text:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 /* The table scrolls sideways; the two left sub-columns (each a quarter of the visible width)
@@ -260,7 +261,7 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
       <div class="s2-when"><span id="s2M"></span><span id="s2Y"></span></div>
       <button class="icon-btn" id="next2" aria-label="Mes siguiente">&#8250;</button>
     </div>
-    <textarea id="s2Text" rows="3" placeholder="Escribe aquí…" aria-label="Texto del mes"></textarea>
+    <textarea id="s2Text" rows="1" placeholder="Escribe aquí…" aria-label="Texto del mes"></textarea>
   </div>
   <button class="s2-fold" id="s2Fold" aria-label="Ocultar la macrocolumna izquierda" aria-expanded="true">&#8249;</button>
   <div class="s2-scroll" id="s2Scroll">
