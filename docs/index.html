@@ -891,7 +891,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     t.style.paddingTop = top + "px"; t.style.paddingBottom = Math.max(PAD, spare - top) + "px";
   }
   const centerAll = () => $("s2Table").querySelectorAll("textarea").forEach(centerCell);
-  // widen a left sub-column so its longest single word fits on one line; spaces still wrap
+  // a left sub-column is as wide as its longest single word; spaces still wrap
   let measureCtx;
   function wordWidth(el) {
     const words = el.value.split(/\s+/).filter(Boolean);
@@ -909,8 +909,9 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
       else if (el.classList.contains("stick2")) w2 = Math.max(w2, w);
       else w1 = Math.max(w1, w);
     });
-    const sc = $("s2Scroll"), quarter = sc.clientWidth / 4;
-    w1 = Math.max(quarter, w1); w2 = Math.max(quarter, w2);
+    // as wide as the longest word, never a share of the screen (landscape would make them huge)
+    const sc = $("s2Scroll"), least = 48;
+    w1 = Math.max(least, w1); w2 = Math.max(least, w2);
     if (wide > w1 + w2) w2 = wide - w1;           // a full-width cell's word spills into the second column
     sc.style.setProperty("--w1", Math.ceil(w1) + "px");
     sc.style.setProperty("--w2", Math.ceil(w2) + "px");
