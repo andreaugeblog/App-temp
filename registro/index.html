@@ -195,6 +195,12 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 7px 12px; overflow: hidden;
 }
 #footNote:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.weeks { display: grid; grid-template-columns: max-content 1fr; margin-top: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.weeks > * { border-bottom: 1px solid var(--line); min-height: 2.6em; }
+.weeks > :nth-last-child(-n+2) { border-bottom: 0; }
+.weeks .wk-l { display: grid; place-items: center; padding: 0 14px; border-right: 1px solid var(--line); font-size: .8rem; font-weight: 500; }
+.weeks .wk-r { width: 100%; height: 100%; min-height: 2.6em; border: 0; resize: none; font: inherit; font-size: .9rem; line-height: 1.4; padding: 8px 12px; color: var(--ink); background: var(--surface); overflow: hidden; display: block; }
+.weeks .wk-r:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
 .s2 #s2Text, .s2 #s3Text {
   /* starts as tall as the month selector beside it and grows downward with the text */
   width: 100%; height: 38px; min-height: 38px; resize: none; font: inherit; line-height: 1.45; color: var(--ink);
@@ -346,6 +352,13 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 </div>
 <p class="status" id="status" hidden></p>
 <textarea id="footNote" rows="1" placeholder="Escribe aquí…" aria-label="Notas de la sección"></textarea>
+<!-- third section only: one row per week of the month, the right column filled per month -->
+<div class="weeks" id="s3Weeks" hidden>
+  <div class="wk-l">Semana 1</div><textarea class="wk-r" data-w="0" rows="1" aria-label="Semana 1"></textarea>
+  <div class="wk-l">Semana 2</div><textarea class="wk-r" data-w="1" rows="1" aria-label="Semana 2"></textarea>
+  <div class="wk-l">Semana 3</div><textarea class="wk-r" data-w="2" rows="1" aria-label="Semana 3"></textarea>
+  <div class="wk-l">Semana 4</div><textarea class="wk-r" data-w="3" rows="1" aria-label="Semana 4"></textarea>
+</div>
 
 <!-- PIN -->
 <div class="scrim" id="pinScrim" hidden>
@@ -655,7 +668,18 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     const el = $("footNote");
     if (document.activeElement !== el) el.value = (config.fixed && config.fixed.foot) || "";
     grow(el);
+    $("s3Weeks").hidden = sec().type !== "s3";
+    if (sec().type === "s3") {
+      const wk = (months[viewKey] && months[viewKey].wk) || [];
+      $("s3Weeks").querySelectorAll(".wk-r").forEach(t => { if (document.activeElement !== t) t.value = wk[+t.dataset.w] || ""; grow(t); });
+    }
   }
+  $("s3Weeks").addEventListener("input", e => {
+    const t = e.target; if (!t.dataset.w) return;
+    const m = months[viewKey] || (months[viewKey] = {});
+    m.wk = (Array.isArray(m.wk) ? m.wk : ["", "", "", ""]).slice(); m.wk[+t.dataset.w] = t.value;
+    grow(t); saveMonth(viewKey);
+  });
   function render() {
     document.body.dataset.type = sec().type;
     renderFoot();
