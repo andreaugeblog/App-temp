@@ -180,7 +180,7 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
 .s2-when span:last-child { font-family: var(--f-num); color: var(--muted); font-size: .9rem; margin-top: 2px; }
 .s2 textarea {
   width: 100%; min-height: 4.8em; resize: vertical; font: inherit; line-height: 1.45; color: var(--ink);
-  background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; overflow: hidden;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; overflow: hidden;
 }
 .s2 textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .s2-scroll { margin-top: 14px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
@@ -195,8 +195,8 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
 .macro-title { width: 100%; border: 0; border-bottom: 1px solid var(--line); background: var(--surface); padding: 10px 12px; font: 600 .92rem var(--f-ui); color: var(--ink); text-align: center; border-radius: 0; }
 .macro-title::placeholder { color: var(--muted); }
 .macro-title:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
-.macro-body { flex: 1; min-height: 9em; width: 100%; border: 0; resize: none; background: var(--surface); color: var(--ink); font: inherit; line-height: 1.45; padding: 9px 10px; border-radius: 0; }
-.macro-body:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
+.s2 .macro-body { flex: 1; min-height: 9em; width: 100%; border: 0; resize: none; background: var(--surface); color: var(--ink); font: inherit; line-height: 1.45; padding: 9px 10px; border-radius: 0; }
+.s2 .macro-body:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
 @media (max-width: 420px) { .s2-when { min-width: 4.6em; } .s2-when span:first-child { font-size: 1rem; } }
 
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 60; background: var(--ink); color: var(--bg); padding: 11px 16px; border-radius: 10px; font-size: .9rem; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
