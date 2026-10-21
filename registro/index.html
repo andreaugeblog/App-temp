@@ -188,19 +188,20 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
    stay put, the right macro column holds 31 day columns. Cells reaching across it are kept
    to the visible width and stick in place. */
 .s2-scroll { margin-top: 14px; border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; container-type: inline-size; }
-.s2-scroll { --lw: 25cqw; }
-.s2-scroll.collapsed { --lw: 0px; }
+/* each left sub-column is a quarter of the width, or wider to fit its longest word (--w1/--w2 set by the script) */
+.s2-scroll { --w1: 25cqw; --w2: 25cqw; --lw1: var(--w1); --lw2: var(--w2); }
+.s2-scroll.collapsed { --lw1: 0px; --lw2: 0px; }
 .s2-scroll.collapsed .stick1, .s2-scroll.collapsed .stick2 { display: none; }
 /* text in the left macro column, two steps below the body size */
 .s2 .c1.stick1, .s2 .c1.stick2 { font-size: .8rem; line-height: 1.3; }
 .s2-fold { display: grid; place-items: center; width: 34px; height: 30px; margin: 14px 0 -8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font-size: 1.1rem; line-height: 1; }
 .s2-fold:hover { border-color: var(--accent); color: var(--accent); }
-.s2-table { display: grid; grid-template-columns: var(--lw) var(--lw) repeat(31, 3.1em); grid-template-rows: auto repeat(13, minmax(2.6em, auto)); width: max-content; background: var(--surface); }
+.s2-table { display: grid; grid-template-columns: var(--lw1) var(--lw2) repeat(31, 3.1em); grid-template-rows: auto repeat(13, minmax(2.6em, auto)); width: max-content; background: var(--surface); }
 .s2-table > * { text-align: center; border: 0; border-radius: 0; background: var(--surface); color: var(--ink); font: inherit; min-width: 0; width: 100%; margin: 0; }
 .s2-table > *:focus { outline: 2px solid var(--accent); outline-offset: -2px; z-index: 3; }
 .s2 .stick1, .s2 .stick2, .s2 .stickv { position: sticky; z-index: 2; }
 .s2 .stick1 { left: 0; }
-.s2 .stick2 { left: var(--lw); }
+.s2 .stick2 { left: var(--lw1); }
 .s2 .stickv { justify-self: start; }
 .s2 .day { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 0; text-align: center; font-family: var(--f-num); font-size: .8rem; }
 .s2 .day.last { border-right: 0; }
@@ -734,14 +735,14 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
     "#b8e0d2", "#f6c6a8", "#c7c4f2", "#f2e6a0", "#a9d6f5", "#f5b8c8", "#cde8a6", "#e8c4e8"];
   function buildS2Table() {
     let tint = 0;
-    let h = '<input id="macro1" data-t="1" class="macro-title stickv" style="grid-area:1/3/2/-1;width:calc(100cqw - 2 * var(--lw));left:calc(2 * var(--lw))" aria-label="Título de la macrocolumna derecha">';
+    let h = '<input id="macro1" data-t="1" class="macro-title stickv" style="grid-area:1/3/2/-1;width:calc(100cqw - var(--lw1) - var(--lw2));left:calc(var(--lw1) + var(--lw2))" aria-label="Título de la macrocolumna derecha">';
     const boxedAt = {};   // "col:row" -> the cell ending on that row has a bottom line
     for (const band of BANDS) {
       band.cols.forEach((c, ci) => {
         let col = c.col || (band.split ? String(ci + 1) : "1/3");
         // where it stays on screen while the day columns scroll
         let stick = col === "2" ? "stick2" : "stick1", extra = "";
-        if (col === "2/4") { col = "2/-1"; stick = "stickv"; extra = ";width:calc(100cqw - var(--lw));left:var(--lw)"; }
+        if (col === "2/4") { col = "2/-1"; stick = "stickv"; extra = ";width:calc(100cqw - var(--lw1));left:var(--lw1)"; }
         if (col === "1/4") { col = "1/-1"; stick = "stickv"; extra = ";width:100cqw;left:0"; }
         for (let r = band.from; r <= band.to; ) {
           const g = c.groups.find(x => x[0] === r);
@@ -785,8 +786,33 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
     t.style.paddingTop = top + "px"; t.style.paddingBottom = Math.max(PAD, spare - top) + "px";
   }
   const centerAll = () => $("s2Table").querySelectorAll("textarea").forEach(centerCell);
-  function fitAll() { $("s2Table").querySelectorAll("textarea").forEach(fitCell); centerAll(); }
+  // widen a left sub-column so its longest single word fits on one line; spaces still wrap
+  let measureCtx;
+  function wordWidth(el) {
+    const words = el.value.split(/\s+/).filter(Boolean);
+    if (!words.length) return 0;
+    measureCtx = measureCtx || document.createElement("canvas").getContext("2d");
+    const cs = getComputedStyle(el);
+    measureCtx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+    return Math.max(...words.map(w => measureCtx.measureText(w).width)) + 2 * PAD + 6;
+  }
+  function fitColumns() {
+    let w1 = 0, w2 = 0, wide = 0;
+    $("s2Table").querySelectorAll(".stick1, .stick2").forEach(el => {
+      const w = wordWidth(el), col = el.style.gridColumn.replace(/\s/g, "");
+      if (col.startsWith("1/3")) wide = Math.max(wide, w);
+      else if (el.classList.contains("stick2")) w2 = Math.max(w2, w);
+      else w1 = Math.max(w1, w);
+    });
+    const sc = $("s2Scroll"), quarter = sc.clientWidth / 4;
+    w1 = Math.max(quarter, w1); w2 = Math.max(quarter, w2);
+    if (wide > w1 + w2) w2 = wide - w1;           // a full-width cell's word spills into the second column
+    sc.style.setProperty("--w1", Math.ceil(w1) + "px");
+    sc.style.setProperty("--w2", Math.ceil(w2) + "px");
+  }
+  function fitAll() { fitColumns(); $("s2Table").querySelectorAll("textarea").forEach(fitCell); centerAll(); }
   if (window.ResizeObserver) new ResizeObserver(() => requestAnimationFrame(centerAll)).observe($("s2Table"));
+  window.addEventListener("resize", () => { if (sec().type === "s2") fitAll(); });
   // the arrow above the table folds the left macro column away to give the days the full width
   function setFold(folded) {
     $("s2Scroll").classList.toggle("collapsed", folded);
