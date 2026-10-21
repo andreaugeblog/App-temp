@@ -202,7 +202,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 .s3 .s2-scroll { --t1: var(--w1, 48px); --t2: var(--w2, 48px); --t3: var(--w3, 48px); }
 .s3 .s2-scroll.collapsed { --t1: 0px; --t2: 0px; --t3: 0px; }
 .s3 .s2-scroll.collapsed .s3-left { display: none; }
-.s2-table.s3-table { grid-template-columns: var(--t1) var(--t2) var(--t3) repeat(31, 3.1em); grid-template-rows: repeat(12, 2.6em); }
+.s2-table.s3-table { grid-template-columns: var(--t1) var(--t2) var(--t3) repeat(31, 3.1em); }
 .s3 .s3-left { position: sticky; z-index: 2; border-right: 1px solid var(--line); }
 .s3 .s3-left.l1 { left: 0; }
 .s3 .s3-left.l2 { left: var(--t1); }
@@ -248,6 +248,22 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 .vals .val button { border: 0; background: none; width: 26px; height: 26px; border-radius: 50%; color: var(--muted); font-size: 1rem; line-height: 1; }
 .vals .val button:hover { color: var(--danger); background: var(--surface); }
 .vals .none { color: var(--muted); font-size: .88rem; }
+.r3list { display: grid; gap: 8px; margin: 4px 0 8px; }
+.r3item { display: grid; gap: 6px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); font-size: .88rem; touch-action: pan-y; }
+.r3item.dragging { position: relative; z-index: 5; box-shadow: var(--shadow); opacity: .95; }
+.r3item.drop-before { box-shadow: 0 -3px 0 var(--accent); }
+.r3item.drop-after { box-shadow: 0 3px 0 var(--accent); }
+.r3top { display: flex; align-items: center; gap: 8px; }
+.r3top b { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.r3drag { border: 0; background: none; font-size: 1.2rem; color: var(--muted); cursor: grab; touch-action: none; padding: 2px 6px; }
+.r3del { border: 0; background: none; color: var(--muted); font-size: 1rem; padding: 2px 8px; border-radius: 8px; }
+.r3del.armed { color: var(--danger); font-size: .82rem; background: var(--surface); }
+.r3opts { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+.r3opts label { display: inline-flex; align-items: center; gap: 6px; }
+.r3opts input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); }
+.r3opts input[type=date], .r3opts select { font: inherit; font-size: .84rem; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 7px; padding: 4px 6px; }
+.r3opts input[type=date]:disabled { opacity: .4; }
+.r3list .none { color: var(--muted); }
 .offlist { display: grid; gap: 6px; }
 .offlist .offrow { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; padding: 6px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); font-size: .88rem; }
 .offlist .offrow i { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--line); display: inline-block; }
@@ -403,17 +419,11 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
       <div class="vals" id="g3Vals"></div>
       <div class="inline"><input class="num" id="g3NewVal" maxlength="8" placeholder="Ej. B2" autocomplete="off" style="width:7em;text-align:left"><button class="ghost" id="g3AddVal">Añadir</button></div>
     </div>
-    <div class="field"><span>Filas</span><div class="summary" id="g3Rules" style="margin:0"></div></div>
-    <div class="field"><span>Día del mes de las filas rojas</span>
-      <div class="inline">1ª roja: día <input class="num" id="g3red1" inputmode="numeric" style="width:4em"></div>
-      <div class="inline">2ª roja: día <input class="num" id="g3red2" inputmode="numeric" style="width:4em"></div>
-    </div>
-    <div class="field"><span>Día de la fila verde (cada 3 meses)</span>
-      <div class="inline">Verde: día <input class="num" id="g3green" inputmode="numeric" style="width:4em"></div>
-    </div>
-    <div class="field"><span>Filas desactivadas</span>
-      <p class="sub" style="margin:0">Una fila desactivada se ve oscura y sus valores quedan ocultos (no se borran). Con una fecha, solo desde ese día.</p>
-      <div class="offlist" id="g3Off"></div>
+    <div class="field"><span>Frecuencias</span><div class="summary" id="g3Rules" style="margin:0"></div></div>
+    <div class="field"><span>Filas</span>
+      <p class="sub" style="margin:0">Arrastra ⠿ para cambiar el orden: la fila se lleva su nombre, frecuencia, texto y valores. Una fila desactivada se ve oscura y sus valores quedan ocultos (no se borran); con una fecha, solo desde ese día.</p>
+      <div class="r3list" id="g3Rows"></div>
+      <button class="ghost" id="g3AddRow">+ Añadir fila</button>
     </div>
     <div class="summary" id="g3Summary"></div>
     <button class="go" id="g3Go">Adelante</button>
@@ -750,10 +760,17 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     config.rows.pop(); render(); saveConfig(); checkReassign();
   };
 
-  // ---- third section: generation ----
-  // Each colour of column 2 sets how often its rows of column 4 get a value: one column with
-  // values, then the empty ones (blue every 7 days). Only the rows with a rule are generated.
-  // the values the generator draws from, added in the settings (none to start with)
+  // ---- third section: rows and generation ----
+  // Under a fixed two-row label block, the table is a list of rows (config.rows3). Each row has a
+  // name (column 1), a frequency colour shown as a word in column 2, a text (column 3), its own
+  // day for monthly/quarterly rows, an on/off state and, per month, 31 values (months[k].v3[id]).
+  // The generator draws from the values listed in the settings.
+  const FREQ = {
+    blue:   { word: "Semanal",    tint: "#eaf2fd", mark: "#7fb0ea", every: 7,  text: "una columna con un valor, luego 6 vacías" },
+    yellow: { word: "Quincenal",  tint: "#fff8df", mark: "#e8c35a", every: 14, text: "una columna con un valor, luego 13 vacías" },
+    red:    { word: "Mensual",    tint: "#fdeeec", mark: "#e58c84", months: 1, text: "un valor al mes, el día de la fila" },
+    green:  { word: "Trimestral", tint: "#ebf7ec", mark: "#7cc48a", months: 3, text: "un valor cada 3 meses, el día de la fila, desde el mes del día de inicio" }
+  };
   const vals3 = () => Array.isArray(config.vals3) ? config.vals3 : [];
   const pickVal = () => pick(vals3());
   function drawVals() {
@@ -777,150 +794,210 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     config.vals3 = vals3().filter((_, i) => i !== +b.dataset.i);
     drawVals(); summarize3(); saveConfig();
   });
-  const S3_GEN = {
-    3: { every: 7, make: pickVal },
-    4: { every: 7, make: pickVal },
-    5: { every: 7, make: pickVal },
-    6: { every: 7, make: pickVal },
-    7: { every: 7, make: pickVal },
-    8: { every: 14, make: pickVal },
-    9: { every: 14, make: pickVal },
-    // red rows: once a month, on the day chosen in the settings for each row
-    10: { monthly: "red1", make: pickVal },
-    11: { monthly: "red2", make: pickVal },
-    // green row: every 3 months, counted from the start day's month, on its chosen day
-    12: { monthly: "green", months: 3, make: pickVal }
-  };
-  const S3_GEN_TEXT = {
-    7: "Filas azules (2ª–6ª): una columna con un valor de la lista, luego 6 vacías",
-    14: "Filas amarillas (7ª–8ª): una columna con un valor de la lista, luego 13 vacías",
-    m: "Filas rojas (9ª–10ª): un valor de la lista una vez al mes, el día elegido abajo (si el mes no tiene ese día, el último)",
-    q: "Fila verde (11ª): un valor de la lista cada 3 meses, el día elegido abajo, empezando por el mes del día de inicio"
-  };
-  // rows switched off in the settings: dark, values hidden (kept); with a date only from that day
-  const S3_ROW_NAMES = { 3: "2ª", 4: "3ª", 5: "4ª", 6: "5ª", 7: "6ª", 8: "7ª", 9: "8ª", 10: "9ª", 11: "10ª", 12: "11ª" };
-  function rowOff(r, key, day) {
-    const o = (config.off3 || {})[r];
-    if (!o || !o.off) return false;
-    if (!o.from) return true;
-    return key + "-" + String(day).padStart(2, "0") >= o.from;
+
+  // The rows, built once from the earlier fixed layout (grid rows 3–12: 5 blue, 2 yellow, 2 red, 1 green).
+  // `leg` keeps the old grid row so values saved before still show up until the row is written again.
+  function rows3() {
+    if (Array.isArray(config.rows3)) return config.rows3;
+    const fx = config.fixed || {}, g = config.gen3 || {}, off = config.off3 || {};
+    const colorOf = r => r <= 7 ? "blue" : r <= 9 ? "yellow" : r <= 11 ? "red" : "green";
+    const dayOf = r => r === 10 ? (g.red1 || 1) : r === 11 ? (g.red2 || 15) : r === 12 ? (g.green || 1) : 1;
+    const at = (k, r) => (Array.isArray(fx[k]) && fx[k][r - 1]) || "";
+    config.rows3 = Array.from({ length: 10 }, (_, i) => {
+      const r = i + 3, o = off[r] || {};
+      return { id: "r" + uid(), leg: r, name: at("s3c1", r), text: at("s3c3", r), color: colorOf(r), day: dayOf(r), off: !!o.off, from: o.from || "" };
+    });
+    return config.rows3;
   }
-  function drawOffList() {
-    const off = config.off3 || {};
-    $("g3Off").innerHTML = Object.keys(S3_ROW_NAMES).map(r => {
-      const o = off[r] || {};
-      return `<label class="offrow"><i style="background:${S3_TINT[r]}"></i><span><input type="checkbox" data-r="${r}"${o.off ? " checked" : ""}> Fila ${S3_ROW_NAMES[r]}</span>
-        <span>desde <input type="date" data-r="${r}" value="${o.from || ""}"${o.off ? "" : " disabled"} aria-label="Desactivar la fila ${S3_ROW_NAMES[r]} desde"></span></label>`;
-    }).join("");
+  function rowVals(mo, row) {
+    if (mo && mo.v3 && Array.isArray(mo.v3[row.id])) return mo.v3[row.id];
+    return (row.leg && mo && Array.isArray(mo["e" + row.leg])) ? mo["e" + row.leg] : [];
   }
-  $("g3Off").addEventListener("input", e => {
-    const r = e.target.dataset.r; if (!r) return;
-    const off = Object.assign({}, config.off3);
-    const o = Object.assign({}, off[r]);
-    if (e.target.type === "checkbox") o.off = e.target.checked; else o.from = e.target.value;
-    off[r] = o; config.off3 = off;
-    const date = $("g3Off").querySelector(`input[type=date][data-r="${r}"]`); date.disabled = !o.off;
-    saveConfig();
+  function setRowVals(key, row, arr) {
+    const m = months[key] = Object.assign({}, months[key]);
+    m.v3 = Object.assign({}, m.v3, { [row.id]: arr });
+    if (row.leg) delete m["e" + row.leg];
+    return m;
+  }
+  function rowOff(row, key, day) {
+    if (!row.off) return false;
+    if (!row.from) return true;
+    return key + "-" + String(day).padStart(2, "0") >= row.from;
+  }
+  const rowTitle = (row, i) => (row.name || "").trim() || `Fila ${i + 1} (sin nombre)`;
+
+  // ---- settings: the list of rows ----
+  function drawRows3() {
+    $("g3Rows").innerHTML = rows3().map((row, i) => `
+      <div class="r3item" data-id="${row.id}" style="border-left:6px solid ${FREQ[row.color].mark}">
+        <div class="r3top">
+          <button class="r3drag" aria-label="Mover ${esc(rowTitle(row, i))}" title="Arrastrar para mover">⠿</button>
+          <b>${esc(rowTitle(row, i))}</b>
+          <button class="r3del" data-act="del" aria-label="Eliminar ${esc(rowTitle(row, i))}">×</button>
+        </div>
+        <div class="r3opts">
+          <label>Frecuencia <select data-act="color">${Object.entries(FREQ).map(([k, f]) => `<option value="${k}"${k === row.color ? " selected" : ""}>${f.word}</option>`).join("")}</select></label>
+          ${FREQ[row.color].months ? `<label>Día <input class="num" data-act="day" inputmode="numeric" value="${row.day || 1}" style="width:3.6em"></label>` : ""}
+        </div>
+        <div class="r3opts">
+          <label><input type="checkbox" data-act="off"${row.off ? " checked" : ""}> Desactivada</label>
+          <label>desde <input type="date" data-act="from" value="${row.from || ""}"${row.off ? "" : " disabled"}></label>
+        </div>
+      </div>`).join("") || '<p class="none">No hay filas. Añade la primera.</p>';
+  }
+  function rowById(id) { return rows3().find(r => r.id === id); }
+  $("g3Rows").addEventListener("change", e => {
+    const item = e.target.closest(".r3item"); if (!item) return;
+    const row = rowById(item.dataset.id), act = e.target.dataset.act;
+    if (act === "color") row.color = e.target.value;
+    if (act === "day") { const v = parseInt(e.target.value, 10); if (v >= 1 && v <= 31) row.day = v; }
+    if (act === "off") row.off = e.target.checked;
+    if (act === "from") row.from = e.target.value;
+    saveConfig(); drawRows3(); summarize3(); buildS3Table(); render();
   });
-  const g3Defaults = () => ({ start: curKey + "-01", red1: 1, red2: 15, green: 1 });
+  $("g3Rows").addEventListener("click", e => {
+    const b = e.target.closest('[data-act="del"]'); if (!b) return;
+    const item = b.closest(".r3item"), row = rowById(item.dataset.id);
+    if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "¿Eliminar?"; b.classList.add("armed"); setTimeout(() => { if (b.isConnected) { b.dataset.armed = ""; b.textContent = "×"; b.classList.remove("armed"); } }, 3000); return; }
+    config.rows3 = rows3().filter(r => r !== row);
+    // its values go with it, in every month
+    Object.keys(months).forEach(k => {
+      const m = months[k]; let changed = false;
+      if (m.v3 && row.id in m.v3) { m.v3 = Object.assign({}, m.v3); delete m.v3[row.id]; changed = true; }
+      if (row.leg && m["e" + row.leg]) { delete m["e" + row.leg]; changed = true; }
+      if (changed) writeDoc(monthPath(k), m);
+    });
+    saveConfig(); drawRows3(); summarize3(); buildS3Table(); render();
+  });
+  $("g3AddRow").onclick = () => {
+    rows3().push({ id: "r" + uid(), name: "", text: "", color: "blue", day: 1, off: false, from: "" });
+    saveConfig(); drawRows3(); summarize3(); buildS3Table(); render();
+    $("g3Rows").lastElementChild.scrollIntoView({ block: "nearest" });
+  };
+  // drag a row by its handle (mouse or finger) and drop it between two others
+  let drag = null;
+  $("g3Rows").addEventListener("pointerdown", e => {
+    const h = e.target.closest(".r3drag"); if (!h) return;
+    e.preventDefault();
+    const item = h.closest(".r3item"), box = item.getBoundingClientRect();
+    drag = { item, startY: e.clientY, id: item.dataset.id };
+    item.classList.add("dragging");
+    h.setPointerCapture(e.pointerId);
+  });
+  $("g3Rows").addEventListener("pointermove", e => {
+    if (!drag) return;
+    drag.item.style.transform = `translateY(${e.clientY - drag.startY}px)`;
+    const others = [...$("g3Rows").querySelectorAll(".r3item")].filter(x => x !== drag.item);
+    others.forEach(x => x.classList.remove("drop-before", "drop-after"));
+    const over = others.find(x => { const r = x.getBoundingClientRect(); return e.clientY >= r.top && e.clientY <= r.bottom; });
+    if (over) { const r = over.getBoundingClientRect(); over.classList.add(e.clientY < r.top + r.height / 2 ? "drop-before" : "drop-after"); }
+  });
+  function endDrag() {
+    if (!drag) return;
+    const target = $("g3Rows").querySelector(".drop-before, .drop-after");
+    const list = rows3(), row = rowById(drag.id);
+    if (target) {
+      const before = target.classList.contains("drop-before");
+      const rest = list.filter(r => r !== row);
+      let at = rest.findIndex(r => r.id === target.dataset.id) + (before ? 0 : 1);
+      rest.splice(at, 0, row);
+      config.rows3 = rest;
+      saveConfig(); buildS3Table(); render();
+    }
+    drag = null; drawRows3();
+  }
+  $("g3Rows").addEventListener("pointerup", endDrag);
+  $("g3Rows").addEventListener("pointercancel", endDrag);
+
+  // ---- generation ----
+  const g3Defaults = () => ({ start: curKey + "-01" });
   function g3Cells(g) {
-    const out = [], first = dayNum(g.start), last = dayNum(todayIso());
+    const out = [], first = dayNum(g.start), last = dayNum(todayIso()), sk = parseKey(g.start.slice(0, 7));
     for (let n = first; n <= last; n++) {
       const dt = new Date(n * 864e5), key = mk(dt.getUTCFullYear(), dt.getUTCMonth()), day = dt.getUTCDate();
-      for (const r in S3_GEN) {
-        const rule = S3_GEN[r];
-        const sk = parseKey(g.start.slice(0, 7)), mk2 = parseKey(key);
-        const monthsIn = (mk2.y - sk.y) * 12 + (mk2.m - sk.m);
-        const on = rule.monthly
-          ? monthsIn % (rule.months || 1) === 0 && day === Math.min(g[rule.monthly], daysIn(key))
-          : (n - first) % rule.every === 0;
-        out.push({ key, day, r: +r, on });
+      const k2 = parseKey(key), monthsIn = (k2.y - sk.y) * 12 + (k2.m - sk.m);
+      for (const row of rows3()) {
+        const f = FREQ[row.color];
+        const on = f.months
+          ? monthsIn % f.months === 0 && day === Math.min(row.day || 1, daysIn(key))
+          : (n - first) % f.every === 0;
+        out.push({ key, day, row, on });
       }
     }
     return out;
   }
   function summarize3() {
     const g = config.gen3 = Object.assign(g3Defaults(), config.gen3 || {}, $("g3Start").value ? { start: $("g3Start").value } : {});
-    ["red1", "red2", "green"].forEach(k => { const v = parseInt($("g3" + k).value, 10); if (v >= 1 && v <= 31) g[k] = v; });
     const on = g3Cells(g).filter(x => x.on);
     const days = new Set(on.map(x => x.key + x.day)).size;
-    $("g3Summary").innerHTML = on.length
-      ? `Rellenará <b>${days} ${days === 1 ? "día" : "días"}</b> desde el <b>${+g.start.slice(8)} de ${label(g.start.slice(0, 7))}</b> hasta hoy.`
+    $("g3Summary").innerHTML = !rows3().length ? "No hay filas que rellenar."
+      : on.length ? `Rellenará <b>${days} ${days === 1 ? "día" : "días"}</b> desde el <b>${+g.start.slice(8)} de ${label(g.start.slice(0, 7))}</b> hasta hoy.`
       : "El día de inicio es posterior a hoy: no hay nada que rellenar todavía.";
     $("g3Go").disabled = !on.length || !vals3().length;
   }
   function openSettings3() {
     const g = Object.assign(g3Defaults(), config.gen3 || {});
-    $("g3Start").value = g.start; $("g3red1").value = g.red1; $("g3red2").value = g.red2; $("g3green").value = g.green;
-    $("g3Rules").innerHTML = Object.values(S3_GEN_TEXT).join("<br>");
-    drawOffList(); drawVals();
+    $("g3Start").value = g.start;
+    $("g3Rules").innerHTML = Object.values(FREQ).map(f => `<b>${f.word}</b>: ${f.text}`).join("<br>");
+    drawRows3(); drawVals();
     summarize3();
     $("set3Scrim").hidden = false;
   }
-  ["g3Start", "g3red1", "g3red2", "g3green"].forEach(id => $(id).addEventListener("input", () => { summarize3(); saveConfig(); }));
+  $("g3Start").addEventListener("input", () => { summarize3(); saveConfig(); });
   $("set3Close").onclick = () => { $("set3Scrim").hidden = true; render(); };
   $("g3Go").onclick = () => {
     summarize3();
-    const touched = new Set();
+    const touched = new Set(), work = {};
     let count = 0;
-    for (const { key, day, r, on } of g3Cells(config.gen3)) {
-      const m = months[key] = Object.assign({}, months[key]);
-      const arr = m["e" + r] = (Array.isArray(m["e" + r]) ? m["e" + r] : []).slice();
+    for (const { key, day, row, on } of g3Cells(config.gen3)) {
+      const k = key + "|" + row.id;
+      const arr = work[k] = work[k] || rowVals(months[key], row).slice();
       while (arr.length < 31) arr.push("");
-      arr[day - 1] = on ? S3_GEN[r].make() : "";
+      arr[day - 1] = on ? pickVal() : "";
       if (on) count++;
-      touched.add(key);
     }
+    for (const k in work) { const [key, id] = k.split("|"); setRowVals(key, rowById(id), work[k]); touched.add(key); }
     touched.forEach(k => writeDoc(monthPath(k), months[k]));
     writeDoc(cfgPath(), config);
     $("set3Scrim").hidden = true; render();
     toast(`Hecho: ${count} valores en ${touched.size} ${touched.size === 1 ? "mes" : "meses"}.`);
   };
 
-  // ---- third section (frame) ----
-  // column 4: 12 rows of 31 days; row 2 shows the day numbers
-  // row 1 is a single cell across all 31 days, kept to the visible width and the same in every month
-  const S3_ROWS = 12, S3_NUMBER_ROWS = [2];
-  // groups of the first three columns: [first row, rows spanned]
-  const S3_SINGLE = Array.from({ length: 10 }, (_, i) => [i + 3, 1]);   // rows 3–12, one per row of column 4
-  const S3_LEFT = [[[1, 2], ...S3_SINGLE], [[1, 2], ...S3_SINGLE], [[1, 2], ...S3_SINGLE]];
-  // colours of the middle column by grid row (its 2nd–6th rows blue, 7th–8th yellow, 9th–10th red, 11th green)
-  const S3_TINT = { 3: "#eaf2fd", 4: "#eaf2fd", 5: "#eaf2fd", 6: "#eaf2fd", 7: "#eaf2fd", 8: "#fff8df", 9: "#fff8df", 10: "#fdeeec", 11: "#fdeeec", 12: "#ebf7ec" };
+  // ---- third section: the table ----
+  // rows 1–2 are the label block: the first cell of each left column spans both, column 4 has a
+  // single heading cell then the day numbers. The rows of config.rows3 follow from grid row 3.
   function buildS3Table() {
+    const rows = rows3(), fx = config.fixed || {};
+    $("s3Table").style.gridTemplateRows = `repeat(${rows.length + 2}, minmax(2.6em, auto))`;
     let h = "";
-    // first three columns: one cell per row with no visible lines, except the groups, which are outlined
-    for (const [c, groups] of S3_LEFT.entries()) {
-      let prevBoxed = false;
-      for (let r = 1; r <= S3_ROWS; ) {
-        const g = groups.find(x => x[0] === r), span = g ? g[1] : 1;
-        const cls = "c1 s3-left l" + (c + 1) + (g ? " boxed" : "") + (g && (r === 1 || prevBoxed) ? " at-top" : "");
-        prevBoxed = !!g;
-        h += `<textarea id="s3c${c + 1}-${r - 1}" data-f="s3c${c + 1}" data-i="${r - 1}" class="${cls}" rows="1" style="grid-column:${c + 1};grid-row:${r}/span ${span}${c === 1 && S3_TINT[r] ? `;background:${S3_TINT[r]};color:#17222b` : ""}" aria-label="Columna ${c + 1}, fila ${r}"></textarea>`;
-        r += span;
-      }
-    }
+    [1, 2, 3].forEach(c => {
+      h += `<textarea id="s3lab${c}" data-lab="${c}" class="c1 s3-left l${c} boxed at-top" rows="1" style="grid-column:${c};grid-row:1/span 2" aria-label="Columna ${c}, etiqueta"></textarea>`;
+    });
+    rows.forEach((row, i) => {
+      const r = i + 3, cls = "c1 s3-left boxed at-top";
+      h += `<textarea data-row="${row.id}" data-col="name" class="${cls} l1" rows="1" style="grid-column:1;grid-row:${r}" aria-label="Nombre de la fila ${i + 1}"></textarea>`;
+      h += `<textarea data-row="${row.id}" class="${cls} l2 freq" rows="1" readonly tabindex="-1" style="grid-column:2;grid-row:${r};background:${FREQ[row.color].tint};color:#17222b" aria-label="Frecuencia de la fila ${i + 1}">${FREQ[row.color].word}</textarea>`;
+      h += `<textarea data-row="${row.id}" data-col="text" class="${cls} l3" rows="1" style="grid-column:3;grid-row:${r}" aria-label="Texto de la fila ${i + 1}"></textarea>`;
+      for (let d = 1; d <= 31; d++)
+        h += `<input data-row="${row.id}" data-i="${d - 1}" size="1" class="day${d === 31 ? " last" : ""}" style="grid-row:${r};grid-column:${d + 3}" aria-label="${esc(rowTitle(row, i))}, día ${d}">`;
+    });
     h += '<input id="s3Head" class="s3-head" style="grid-row:1;grid-column:4/-1" aria-label="Columna 4, fila 1">';
-    for (let r = 2; r <= S3_ROWS; r++) for (let d = 1; d <= 31; d++) {
-      const pos = `grid-row:${r};grid-column:${d + 3}`, last = d === 31 ? " last" : "";
-      h += S3_NUMBER_ROWS.includes(r)
-        ? `<div class="day dnum${last}" style="${pos}">${d}</div>`
-        : `<input id="e${r}-${d - 1}" data-i="${d - 1}" data-k="e${r}" size="1" class="day${last}" style="${pos}" aria-label="Columna 4, fila ${r}, día ${d}">`;
-    }
+    for (let d = 1; d <= 31; d++) h += `<div class="day dnum${d === 31 ? " last" : ""}" style="grid-row:2;grid-column:${d + 3}">${d}</div>`;
     $("s3Table").innerHTML = h;
   }
-  buildS3Table();
   $("s3Table").addEventListener("input", e => {
-    const t = e.target, key = t.dataset.k;
+    const t = e.target;
     if (t.id === "s3Head") { config.fixed = Object.assign({}, config.fixed, { head4: t.value }); saveConfig(); return; }
-    if (t.dataset.f) {
-      const arr = (Array.isArray(config.fixed && config.fixed[t.dataset.f]) ? config.fixed[t.dataset.f] : []).slice();
-      arr[+t.dataset.i] = t.value;
-      config.fixed = Object.assign({}, config.fixed, { [t.dataset.f]: arr });
+    if (t.dataset.lab) {
+      const arr = (Array.isArray(config.fixed && config.fixed["s3c" + t.dataset.lab]) ? config.fixed["s3c" + t.dataset.lab] : []).slice();
+      arr[0] = t.value;
+      config.fixed = Object.assign({}, config.fixed, { ["s3c" + t.dataset.lab]: arr });
       saveConfig(); fitS3(); return;
     }
-    if (!key) return;
-    const m = months[viewKey] || (months[viewKey] = {});
-    m[key] = (Array.isArray(m[key]) ? m[key] : []).slice(); m[key][+t.dataset.i] = t.value;
+    const row = t.dataset.row && rowById(t.dataset.row); if (!row) return;
+    if (t.dataset.col) { row[t.dataset.col] = t.value; saveConfig(); fitS3(); return; }
+    const arr = rowVals(months[viewKey], row).slice(); arr[+t.dataset.i] = t.value;
+    setRowVals(viewKey, row, arr);
     saveMonth(viewKey);
   });
   // each of the first three columns is as wide as its longest word; text centred both ways
@@ -932,6 +1009,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     });
     $("s3Table").querySelectorAll("textarea").forEach(t => { fitCell(t); centerCell(t); });
   }
+  let s3Shape = "";
   function renderS3() {
     const { y, m } = parseKey(viewKey);
     $("s3M").textContent = MESI[m]; $("s3Y").textContent = y;
@@ -939,28 +1017,25 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     const t = $("s3Text");
     if (document.activeElement !== t) t.value = (config.fixed && config.fixed.note) || "";
     grow(t);
-    const mo = months[viewKey] || {};
-    const fx = config.fixed || {};
+    const rows = rows3();
+    const shape = rows.map(r => r.id + r.color).join();
+    if (shape !== s3Shape || !$("s3Head")) { buildS3Table(); s3Shape = shape; }
+    const fx = config.fixed || {}, mo = months[viewKey] || {}, focus = document.activeElement;
     [1, 2, 3].forEach(c => {
-      // text written before the columns were split goes into their first cell
-      const arr = Array.isArray(fx["s3c" + c]) ? fx["s3c" + c] : (fx["l" + c] ? [fx["l" + c]] : []);
-      for (let i = 0; i < S3_ROWS; i++) { const el = $("s3c" + c + "-" + i); if (el && document.activeElement !== el) el.value = arr[i] || ""; }
+      const el = $("s3lab" + c), arr = Array.isArray(fx["s3c" + c]) ? fx["s3c" + c] : (fx["l" + c] ? [fx["l" + c]] : []);
+      if (focus !== el) el.value = arr[0] || "";
+    });
+    const hd = $("s3Head");
+    if (focus !== hd) hd.value = fx.head4 || "";
+    rows.forEach(row => {
+      const allOff = rowOff(row, "0000-00", 1), vals = rowVals(mo, row);
+      $("s3Table").querySelectorAll(`[data-row="${row.id}"]`).forEach(el => {
+        if (el.dataset.col) { if (focus !== el) el.value = row[el.dataset.col] || ""; el.classList.toggle("dark", allOff); }
+        else if (el.classList.contains("freq")) el.classList.toggle("dark", allOff);
+        else { if (focus !== el) el.value = vals[+el.dataset.i] || ""; el.classList.toggle("dark", rowOff(row, viewKey, +el.dataset.i + 1)); }
+      });
     });
     fitS3();
-    const hd = $("s3Head");
-    if (document.activeElement !== hd) hd.value = (config.fixed && config.fixed.head4) || "";
-    for (let r = 3; r <= S3_ROWS; r++) {
-      if (S3_NUMBER_ROWS.includes(r)) continue;
-      const a = Array.isArray(mo["e" + r]) ? mo["e" + r] : [];
-      for (let i = 0; i < 31; i++) {
-        const el = $("e" + r + "-" + i);
-        if (document.activeElement !== el) el.value = a[i] || "";
-        el.classList.toggle("dark", rowOff(r, viewKey, i + 1));
-      }
-      // switched off with no date: the whole row is dark, its left cells too
-      const allOff = rowOff(r, "0000-00", 1);
-      [1, 2, 3].forEach(c => { const el = $("s3c" + c + "-" + (r - 1)); if (el) el.classList.toggle("dark", allOff); });
-    }
   }
   $("s3Text").addEventListener("input", e => {
     config.fixed = Object.assign({}, config.fixed, { note: e.target.value });
@@ -1696,7 +1771,8 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   // ---- export ----
   function filled(k) {
     const c = (months[k] && months[k].cells) || {};
-    const days = Object.keys(months[k] || {}).filter(key => /^[de]\d+$/.test(key)).reduce((n, key) => n + (months[k][key] || []).filter(v => v && String(v).trim()).length, 0);
+    const days = Object.keys(months[k] || {}).filter(key => /^[de]\d+$/.test(key)).reduce((n, key) => n + (months[k][key] || []).filter(v => v && String(v).trim()).length, 0)
+      + Object.values((months[k] || {}).v3 || {}).reduce((n, a) => n + (a || []).filter(v => v && String(v).trim()).length, 0);
     return days + Object.values(c).reduce((n, row) => n + Object.keys(row).length, 0);
   }
   // Everything the app holds: every section with its name, settings and months.
