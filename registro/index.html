@@ -409,10 +409,16 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
 
   // sections built into the app, each with its own structure
   const BUILT_IN = [{ id: "main", name: "", type: "numeri" }, { id: "s2", name: "", type: "s2" }];
+  // only the built-in sections are kept; anything created earlier is removed with its data
   function withBuiltIn(list) {
-    const out = list.slice();
-    BUILT_IN.forEach(b => { if (!out.some(x => x.id === b.id)) out.push(Object.assign({}, b)); });
-    return out;
+    list.filter(x => !BUILT_IN.some(b => b.id === x.id)).forEach(dropSection);
+    return BUILT_IN.map(b => Object.assign({}, b, list.find(x => x.id === b.id) || {}, { type: b.type }));
+  }
+  function dropSection(x) {
+    try { localStorage.removeItem(lsKey(x.id)); } catch (e) {}
+    if (!db) return;
+    deleteDoc(cfgPath(x.id));
+    db.collection(monthsCol(x.id)).get().then(q => q.docs.forEach(d => deleteDoc(monthsCol(x.id) + "/" + d.id))).catch(() => {});
   }
   function loadLocal() {
     config = defaults(); months = {};
@@ -1132,7 +1138,7 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
       const list = JSON.parse(JSON.stringify(s.data().list || []));
       if (!list.length) return;
       sections = withBuiltIn(list);
-      if (sections.length !== list.length) saveIndex();
+      if (sections.length !== list.length || sections.some((x, i) => !list[i] || list[i].id !== x.id)) saveIndex();
       if (!sections.some(x => x.id === active)) switchSection(sections[0].id);
       else { renderSections(); saveLocal(); }
     }, () => {});
