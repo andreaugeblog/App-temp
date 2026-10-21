@@ -715,7 +715,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   const S3_SINGLE = Array.from({ length: 10 }, (_, i) => [i + 3, 1]);   // rows 3–12, one per row of column 4
   const S3_LEFT = [[[1, 2], ...S3_SINGLE], [[1, 2], ...S3_SINGLE], [[1, 2], ...S3_SINGLE]];
   // colours of the middle column by grid row (its 2nd–6th rows blue, 7th–8th yellow, 9th–10th red, 11th green)
-  const S3_TINT = { 3: "#d6e6fb", 4: "#d6e6fb", 5: "#d6e6fb", 6: "#d6e6fb", 7: "#d6e6fb", 8: "#fff1bf", 9: "#fff1bf", 10: "#fbd9d6", 11: "#fbd9d6", 12: "#d6f0d8" };
+  const S3_TINT = { 3: "#eaf2fd", 4: "#eaf2fd", 5: "#eaf2fd", 6: "#eaf2fd", 7: "#eaf2fd", 8: "#fff8df", 9: "#fff8df", 10: "#fdeeec", 11: "#fdeeec", 12: "#ebf7ec" };
   function buildS3Table() {
     let h = "";
     // first three columns: one cell per row with no visible lines, except the groups, which are outlined
