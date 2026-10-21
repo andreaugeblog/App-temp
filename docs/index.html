@@ -337,6 +337,22 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
   </div>
 </div>
 
+<!-- Settings of the second section -->
+<div class="scrim" id="set2Scrim" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="set2Title">
+    <h2 id="set2Title">Generar valores</h2>
+    <p class="sub">Desde el día de inicio: dos columnas con valores, cinco vacías, y así hasta hoy, también entre un mes y el siguiente. Solo en las filas marcadas en amarillo.</p>
+    <label class="field"><span>Día de inicio</span><input type="date" id="g2Start" class="num" style="width:auto;text-align:left"></label>
+    <div class="field"><span>Valores</span>
+      <div class="inline">de <input class="num" id="g2Min" inputmode="numeric"> a <input class="num" id="g2Max" inputmode="numeric"></div>
+    </div>
+    <label class="check"><input type="checkbox" id="g2Over"> Sobrescribir también las casillas ya rellenadas</label>
+    <div class="summary" id="g2Summary"></div>
+    <button class="go" id="g2Go">Adelante</button>
+    <div class="row-x"><button class="link" id="set2Close">Cerrar</button></div>
+  </div>
+</div>
+
 <!-- Import -->
 <div class="scrim" id="impScrim" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="impTitle">
@@ -767,7 +783,7 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
   document.addEventListener("click", e => { if (!menu.hidden && !menu.contains(e.target)) setMenu(false); });
   $("goToday").onclick = () => { setMenu(false); viewKey = curKey; render(); };
   // the generation settings belong to the numbers section: open it there from any section
-  $("openSettings").onclick = () => { setMenu(false); openPin(() => { if (sec().type !== "numeri") switchSection("main"); openSettings(); }); };
+  $("openSettings").onclick = () => { setMenu(false); openPin(() => sec().type === "s2" ? openSettings2() : openSettings()); };
   $("openDelete").onclick = () => { setMenu(false); openPin(openDelete); };
   $("openImport").onclick = () => { setMenu(false); openImport(); };
 
@@ -865,6 +881,66 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
   $("setClose").onclick = () => { $("setScrim").hidden = true; };
 
   function rand(lo, hi) { return Math.round((lo + Math.random() * (hi - lo)) * 10) / 10; }
+
+  // ---- generation in the second section ----
+  // From the start day: 2 days with values, 5 without, repeating over real calendar days,
+  // so a month's missing days (30, 31…) are never counted. Only GEN_ROWS get values.
+  const G2_ON = 2, G2_CYCLE = 7;
+  const g2Defaults = () => ({ start: curKey + "-01", min: 1, max: 10, overwrite: false });
+  const dayNum = iso => { const [y, m, d] = iso.split("-").map(Number); return Math.round(Date.UTC(y, m - 1, d) / 864e5); };
+  const todayIso = () => curKey + "-" + String(now.getDate()).padStart(2, "0");
+  function g2Days(g) {
+    const out = [], first = dayNum(g.start), last = dayNum(todayIso());
+    for (let n = first; n <= last; n++) {
+      if ((n - first) % G2_CYCLE >= G2_ON) continue;
+      const dt = new Date(n * 864e5);
+      out.push({ key: mk(dt.getUTCFullYear(), dt.getUTCMonth()), day: dt.getUTCDate() });
+    }
+    return out;
+  }
+  function readG2() {
+    const g = Object.assign(g2Defaults(), config.gen2 || {});
+    if ($("g2Start").value) g.start = $("g2Start").value;
+    const a = parseInt($("g2Min").value, 10), b = parseInt($("g2Max").value, 10);
+    if (Number.isFinite(a) && Number.isFinite(b)) { g.min = Math.min(a, b); g.max = Math.max(a, b); }
+    g.overwrite = $("g2Over").checked;
+    config.gen2 = g;
+    return g;
+  }
+  function summarize2() {
+    const g = readG2(), days = g2Days(g);
+    const fmtD = x => `${x.day} de ${label(x.key)}`;
+    $("g2Summary").innerHTML = days.length
+      ? `Rellenará <b>${days.length} días</b>, del <b>${fmtD(days[0])}</b> al <b>${fmtD(days.at(-1))}</b>, en las filas ${GEN_ROWS.join(", ")}, con números enteros entre ${g.min} y ${g.max}.`
+      : "El día de inicio es posterior a hoy: no hay nada que rellenar todavía.";
+    $("g2Go").disabled = !days.length;
+  }
+  function openSettings2() {
+    const g = Object.assign(g2Defaults(), config.gen2 || {});
+    $("g2Start").value = g.start; $("g2Min").value = g.min; $("g2Max").value = g.max; $("g2Over").checked = !!g.overwrite;
+    summarize2();
+    $("set2Scrim").hidden = false;
+  }
+  ["g2Start", "g2Min", "g2Max", "g2Over"].forEach(id => $(id).addEventListener("input", () => { summarize2(); saveConfig(); }));
+  $("set2Close").onclick = () => { $("set2Scrim").hidden = true; };
+  $("g2Go").onclick = () => {
+    const g = readG2(), touched = new Set();
+    let count = 0;
+    for (const { key, day } of g2Days(g)) {
+      const m = months[key] = Object.assign({}, months[key]);
+      for (const r of GEN_ROWS) {
+        const arr = m["d" + r] = (Array.isArray(m["d" + r]) ? m["d" + r] : []).slice();
+        while (arr.length < 31) arr.push("");
+        if (!g.overwrite && arr[day - 1] && String(arr[day - 1]).trim()) continue;
+        arr[day - 1] = String(g.min + Math.floor(Math.random() * (g.max - g.min + 1)));
+        count++; touched.add(key);
+      }
+    }
+    touched.forEach(k => writeDoc(monthPath(k), months[k]));
+    writeDoc(cfgPath(), config);
+    $("set2Scrim").hidden = true; render();
+    toast(count ? `Hecho: ${count} valores en ${touched.size} ${touched.size === 1 ? "mes" : "meses"}.` : "Todo ya estaba relleno.");
+  };
   $("goBtn").onclick = () => {
     readSettings();
     const rows = namedRows();
