@@ -188,12 +188,17 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
    stay put, the right macro column holds 31 day columns. Cells reaching across it are kept
    to the visible width and stick in place. */
 .s2-scroll { margin-top: 14px; border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; container-type: inline-size; }
-.s2-table { display: grid; grid-template-columns: 25cqw 25cqw repeat(31, 3.1em); grid-template-rows: auto repeat(13, minmax(2.6em, auto)); width: max-content; background: var(--surface); }
+.s2-scroll { --lw: 25cqw; }
+.s2-scroll.collapsed { --lw: 0px; }
+.s2-scroll.collapsed .stick1, .s2-scroll.collapsed .stick2 { display: none; }
+.s2-fold { display: grid; place-items: center; width: 34px; height: 30px; margin: 14px 0 -8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); font-size: 1.1rem; line-height: 1; }
+.s2-fold:hover { border-color: var(--accent); color: var(--accent); }
+.s2-table { display: grid; grid-template-columns: var(--lw) var(--lw) repeat(31, 3.1em); grid-template-rows: auto repeat(13, minmax(2.6em, auto)); width: max-content; background: var(--surface); }
 .s2-table > * { text-align: center; border: 0; border-radius: 0; background: var(--surface); color: var(--ink); font: inherit; min-width: 0; width: 100%; margin: 0; }
 .s2-table > *:focus { outline: 2px solid var(--accent); outline-offset: -2px; z-index: 3; }
 .s2 .stick1, .s2 .stick2, .s2 .stickv { position: sticky; z-index: 2; }
 .s2 .stick1 { left: 0; }
-.s2 .stick2 { left: 25cqw; }
+.s2 .stick2 { left: var(--lw); }
 .s2 .stickv { justify-self: start; }
 .s2 .day { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 0; text-align: center; font-family: var(--f-num); font-size: .8rem; }
 .s2 .day.last { border-right: 0; }
@@ -255,7 +260,8 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
     </div>
     <textarea id="s2Text" rows="3" placeholder="Escribe aquí…" aria-label="Texto del mes"></textarea>
   </div>
-  <div class="s2-scroll">
+  <button class="s2-fold" id="s2Fold" aria-label="Ocultar la macrocolumna izquierda" aria-expanded="true">&#8249;</button>
+  <div class="s2-scroll" id="s2Scroll">
     <div class="s2-table" id="s2Table"></div>
   </div>
 </section>
@@ -726,14 +732,14 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
     "#b8e0d2", "#f6c6a8", "#c7c4f2", "#f2e6a0", "#a9d6f5", "#f5b8c8", "#cde8a6", "#e8c4e8"];
   function buildS2Table() {
     let tint = 0;
-    let h = '<input id="macro1" data-t="1" class="macro-title stickv" style="grid-area:1/3/2/-1;width:50cqw;left:50cqw" aria-label="Título de la macrocolumna derecha">';
+    let h = '<input id="macro1" data-t="1" class="macro-title stickv" style="grid-area:1/3/2/-1;width:calc(100cqw - 2 * var(--lw));left:calc(2 * var(--lw))" aria-label="Título de la macrocolumna derecha">';
     const boxedAt = {};   // "col:row" -> the cell ending on that row has a bottom line
     for (const band of BANDS) {
       band.cols.forEach((c, ci) => {
         let col = c.col || (band.split ? String(ci + 1) : "1/3");
         // where it stays on screen while the day columns scroll
         let stick = col === "2" ? "stick2" : "stick1", extra = "";
-        if (col === "2/4") { col = "2/-1"; stick = "stickv"; extra = ";width:75cqw;left:25cqw"; }
+        if (col === "2/4") { col = "2/-1"; stick = "stickv"; extra = ";width:calc(100cqw - var(--lw));left:var(--lw)"; }
         if (col === "1/4") { col = "1/-1"; stick = "stickv"; extra = ";width:100cqw;left:0"; }
         for (let r = band.from; r <= band.to; ) {
           const g = c.groups.find(x => x[0] === r);
@@ -766,6 +772,16 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
     t.style.height = ""; t.style.minHeight = h + "px";
   }
   const fitAll = () => $("s2Table").querySelectorAll("textarea").forEach(fitCell);
+  // the arrow above the table folds the left macro column away to give the days the full width
+  function setFold(folded) {
+    $("s2Scroll").classList.toggle("collapsed", folded);
+    $("s2Fold").innerHTML = folded ? "&#8250;" : "&#8249;";
+    $("s2Fold").setAttribute("aria-expanded", String(!folded));
+    $("s2Fold").setAttribute("aria-label", folded ? "Mostrar la macrocolumna izquierda" : "Ocultar la macrocolumna izquierda");
+    try { localStorage.setItem(LS + ":fold", folded ? "1" : ""); } catch (e) {}
+  }
+  $("s2Fold").onclick = () => setFold(!$("s2Scroll").classList.contains("collapsed"));
+  try { if (localStorage.getItem(LS + ":fold") === "1") setFold(true); } catch (e) {}
   // ✓ / ✗ rows: a tap opens a small chooser next to the cell
   let pickCell = null;
   $("s2Table").addEventListener("click", e => {
