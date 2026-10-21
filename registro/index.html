@@ -355,6 +355,19 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   </div>
 </div>
 
+<!-- Settings of the third section -->
+<div class="scrim" id="set3Scrim" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="set3Title">
+    <h2 id="set3Title">Generar valores</h2>
+    <p class="sub">Desde el día de inicio hasta hoy, en la columna 4. Cada color de la columna 2 marca cada cuánto se rellena su fila: una columna con valores y luego las vacías. Lo que ya hay en esas filas desde el día de inicio se borra y se genera de nuevo.</p>
+    <label class="field"><span>Día de inicio</span><input type="date" id="g3Start" class="num" style="width:auto;text-align:left"></label>
+    <div class="field"><span>Filas</span><div class="summary" id="g3Rules" style="margin:0"></div></div>
+    <div class="summary" id="g3Summary"></div>
+    <button class="go" id="g3Go">Adelante</button>
+    <div class="row-x"><button class="link" id="set3Close">Cerrar</button></div>
+  </div>
+</div>
+
 <!-- Settings of the second section -->
 <div class="scrim" id="set2Scrim" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="set2Title">
@@ -684,7 +697,64 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     config.rows.pop(); render(); saveConfig(); checkReassign();
   };
 
-  // ---- third section (frame only for now) ----
+  // ---- third section: generation ----
+  // Each colour of column 2 sets how often its rows of column 4 get a value: one column with
+  // values, then the empty ones (blue every 7 days). Only the rows with a rule are generated.
+  const LETTERS = ["A", "B", "C", "D", "E", "F", "G"];
+  const S3_GEN = {
+    3: { every: 7, make: () => pick(LETTERS) },
+    4: { every: 7, make: () => pick(LETTERS) },
+    5: { every: 7, make: () => pick(LETTERS) },
+    6: { every: 7, make: () => pick(LETTERS) },
+    7: { every: 7, make: () => pick(LETTERS) }
+  };
+  const S3_GEN_TEXT = { 7: "azules (filas 2ª–6ª): una columna con una letra de la A a la G, luego 6 vacías" };
+  const g3Defaults = () => ({ start: curKey + "-01" });
+  function g3Cells(g) {
+    const out = [], first = dayNum(g.start), last = dayNum(todayIso());
+    for (let n = first; n <= last; n++) {
+      const dt = new Date(n * 864e5), key = mk(dt.getUTCFullYear(), dt.getUTCMonth()), day = dt.getUTCDate();
+      for (const r in S3_GEN) out.push({ key, day, r: +r, on: (n - first) % S3_GEN[r].every === 0 });
+    }
+    return out;
+  }
+  function summarize3() {
+    const g = config.gen3 = Object.assign(g3Defaults(), config.gen3 || {}, $("g3Start").value ? { start: $("g3Start").value } : {});
+    const on = g3Cells(g).filter(x => x.on);
+    const days = new Set(on.map(x => x.key + x.day)).size;
+    $("g3Summary").innerHTML = on.length
+      ? `Rellenará <b>${days} ${days === 1 ? "día" : "días"}</b> desde el <b>${+g.start.slice(8)} de ${label(g.start.slice(0, 7))}</b> hasta hoy.`
+      : "El día de inicio es posterior a hoy: no hay nada que rellenar todavía.";
+    $("g3Go").disabled = !on.length;
+  }
+  function openSettings3() {
+    const g = Object.assign(g3Defaults(), config.gen3 || {});
+    $("g3Start").value = g.start;
+    $("g3Rules").innerHTML = Object.values(S3_GEN_TEXT).map(t => "Filas " + t).join("<br>") + "<br>Las filas amarillas, rojas y verde todavía no generan valores.";
+    summarize3();
+    $("set3Scrim").hidden = false;
+  }
+  $("g3Start").addEventListener("input", () => { summarize3(); saveConfig(); });
+  $("set3Close").onclick = () => { $("set3Scrim").hidden = true; };
+  $("g3Go").onclick = () => {
+    summarize3();
+    const touched = new Set();
+    let count = 0;
+    for (const { key, day, r, on } of g3Cells(config.gen3)) {
+      const m = months[key] = Object.assign({}, months[key]);
+      const arr = m["e" + r] = (Array.isArray(m["e" + r]) ? m["e" + r] : []).slice();
+      while (arr.length < 31) arr.push("");
+      arr[day - 1] = on ? S3_GEN[r].make() : "";
+      if (on) count++;
+      touched.add(key);
+    }
+    touched.forEach(k => writeDoc(monthPath(k), months[k]));
+    writeDoc(cfgPath(), config);
+    $("set3Scrim").hidden = true; render();
+    toast(`Hecho: ${count} valores en ${touched.size} ${touched.size === 1 ? "mes" : "meses"}.`);
+  };
+
+  // ---- third section (frame) ----
   // column 4: 12 rows of 31 days; row 2 shows the day numbers
   // row 1 is a single cell across all 31 days, kept to the visible width and the same in every month
   const S3_ROWS = 12, S3_NUMBER_ROWS = [2];
@@ -1009,7 +1079,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   document.addEventListener("click", e => { if (!menu.hidden && !menu.contains(e.target)) setMenu(false); });
   $("goToday").onclick = () => { setMenu(false); viewKey = curKey; render(); };
   // the generation settings belong to the numbers section: open it there from any section
-  $("openSettings").onclick = () => { setMenu(false); openPin(() => sec().type === "s2" ? openSettings2() : sec().type === "s3" ? toast("Esta sección todavía no tiene ajustes.") : openSettings()); };
+  $("openSettings").onclick = () => { setMenu(false); openPin(() => sec().type === "s2" ? openSettings2() : sec().type === "s3" ? openSettings3() : openSettings()); };
   $("openDelete").onclick = () => { setMenu(false); openPin(openDelete); };
   $("openImport").onclick = () => { setMenu(false); openImport(); };
 
