@@ -208,17 +208,17 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
 .s2 #s2Text:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .s2-scroll { margin-top: 14px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 /* 2 columns x (title + 12 rows); column 1 cells can later span several rows */
-.s2-table { display: grid; grid-template-columns: 1fr 1fr 2fr; grid-template-rows: auto repeat(12, minmax(2.6em, auto)); }
-.s2-table > * { border: 0; border-radius: 0; background: var(--surface); color: var(--ink); font: inherit; min-width: 0; width: 100%; margin: 0; }
+.s2-table { display: grid; grid-template-columns: 1fr 1fr 2fr; grid-template-rows: auto repeat(13, minmax(2.6em, auto)); }
+.s2-table > * { text-align: center; border: 0; border-radius: 0; background: var(--surface); color: var(--ink); font: inherit; min-width: 0; width: 100%; margin: 0; }
 .s2-table > *:focus { outline: 2px solid var(--accent); outline-offset: -2px; position: relative; z-index: 1; }
 .s2 .macro-title { border-bottom: 1px solid var(--line); padding: 10px 12px; font-weight: 600; font-size: .92rem; text-align: center; }
 .s2 .macro-title.left { border-bottom: 0; border-right: 1px solid var(--line); }
 .s2 .c1 { border-right: 1px solid var(--line); resize: none; padding: 9px 10px; line-height: 1.35; overflow: hidden; display: block; height: 100%; }
 .s2 .c1.boxed { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .s2 .c1.boxed.at-top { border-top: 0; }
-.s2 .c1.to-end { border-right: 0; }
-.s2 .c1.boxed:last-child, .s2 .c1.to-end { border-bottom: 0; }
-.s2 textarea.macro-title { resize: none; overflow: hidden; display: block; height: 100%; font-weight: inherit; font-size: inherit; text-align: left; padding: 9px 10px; line-height: 1.35; }
+.s2 .c1.to-end, .s2 .c1.full { border-right: 0; }
+.s2 .c1.full { border-bottom: 0; }
+.s2 textarea.macro-title { resize: none; overflow: hidden; display: block; height: 100%; font-weight: inherit; font-size: inherit; text-align: center; padding: 9px 10px; line-height: 1.35; }
 .s2 .r12 { border-bottom: 1px solid var(--line); padding: 9px 10px; }
 .s2 .r12.last { border-bottom: 0; }
 @media (max-width: 420px) { .s2-when { min-width: 4.6em; } .s2-when span:first-child { font-size: 1rem; } }
@@ -646,9 +646,9 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     [0, 1, 2].forEach(i => { const el = $("macro" + i); if (document.activeElement !== el) el.value = mt[i] || ""; });
     const mo = months[viewKey] || {};
     const arr = k => Array.isArray(mo[k]) ? mo[k] : [];
-    for (const k of ["c1", "c1b", "cw", "cr", "r12"]) {
+    for (const k of ["c1", "c1b", "cw", "cr", "cf", "r12"]) {
       const vals = arr(k);
-      for (let i = 0; i < 12; i++) { const el = $(k + "-" + i); if (el && document.activeElement !== el) el.value = vals[i] || ""; }
+      for (let i = 0; i < 13; i++) { const el = $(k + "-" + i); if (el && document.activeElement !== el) el.value = vals[i] || ""; }
     }
   }
   // Left macro column = two sub-columns of 12 cells each. Groups: [first row, number of rows].
@@ -671,7 +671,9 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     { from: 13, to: 13, split: true, cols: [
       { key: "c1", groups: [[13, 1]] },
       { key: "cr", col: "2/4", atTop: true, groups: [[13, 1]] }
-    ] }
+    ] },
+    // closing row across the whole table
+    { from: 14, to: 14, split: false, cols: [{ key: "cf", col: "1/4", atTop: true, groups: [[14, 1]] }] }
   ];
   // the right macro column's own rows stop where a band reaches across it
   const RIGHT_ROWS = 11;
@@ -690,7 +692,7 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
           const span = g ? g[1] : 1;
           // an outlined cell draws its bottom line, and its top line only when the cell above has none
           const above = boxedAt[(band.split ? ci + 1 : 1) + ":" + (r - 1)] || (!band.split && boxedAt["1:" + (r - 1)] && boxedAt["2:" + (r - 1)]);
-          const cls = "c1" + (g ? " boxed" : "") + (g && (r === 1 || above || c.atTop) ? " at-top" : "") + (c.col === "2/4" ? " to-end" : "");
+          const cls = "c1" + (g ? " boxed" : "") + (g && (r === 1 || above || c.atTop) ? " at-top" : "") + (c.col === "2/4" ? " to-end" : "") + (c.col === "1/4" ? " full" : "");
           if (g) { if (band.split) boxedAt[(ci + 1) + ":" + (r + span - 1)] = true; else { boxedAt["1:" + (r + span - 1)] = boxedAt["2:" + (r + span - 1)] = true; } }
           const pos = `grid-row:${r}/span ${span};grid-column:${col}` + (g ? `;background:${TINTS[tint++ % TINTS.length]};color:#17222b` : "");
           h += r === 1
@@ -1051,7 +1053,7 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     const c = (months[k] && months[k].cells) || {};
     const note = (months[k] && months[k].note && months[k].note.trim() ? 1 : 0)
       + ((months[k] && months[k].r12) || []).filter(v => v && v.trim()).length
-      + ["c1", "c1b", "cw", "cr"].reduce((n, key) => n + ((months[k] && Array.isArray(months[k][key]) && months[k][key]) || []).filter(v => v && v.trim()).length, 0);
+      + ["c1", "c1b", "cw", "cr", "cf"].reduce((n, key) => n + ((months[k] && Array.isArray(months[k][key]) && months[k][key]) || []).filter(v => v && v.trim()).length, 0);
     return note + Object.values(c).reduce((n, row) => n + Object.keys(row).length, 0);
   }
   function openExport() {
