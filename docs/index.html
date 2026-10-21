@@ -222,8 +222,12 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 .weeks > * { border-bottom: 1px solid var(--line); min-height: 2.6em; }
 .weeks > :nth-last-child(-n+2) { border-bottom: 0; }
 .weeks .wk-l { display: grid; place-items: center; padding: 0 14px; border-right: 1px solid var(--line); font-size: .8rem; font-weight: 500; }
-.weeks .wk-r { width: 100%; height: 100%; min-height: 2.6em; border: 0; resize: none; font: inherit; font-size: .9rem; line-height: 1.4; padding: 8px 12px; color: var(--ink); background: var(--surface); overflow: hidden; display: block; }
-.weeks .wk-r:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
+.weeks .wk-r { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 5px 8px; }
+.weeks .sig-thumb { width: 72px; height: 36px; border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 0; display: grid; place-items: center; }
+.weeks .sig-thumb svg { width: 100%; height: 100%; }
+.weeks .sig-add { width: 32px; height: 32px; border-radius: 8px; border: 1px dashed var(--accent); background: var(--surface); color: var(--accent); font-size: 1.2rem; line-height: 1; }
+.sigpad { display: block; width: 100%; aspect-ratio: 2 / 1; max-width: 100%; background: #fff; border: 1px solid var(--line); border-radius: 10px; touch-action: none; cursor: crosshair; }
+.sigpad path, .sig-thumb path { fill: none; stroke: #17222b; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .s2 #s2Text, .s2 #s3Text {
   /* starts as tall as the month selector beside it and grows downward with the text */
   width: 100%; height: 38px; min-height: 38px; resize: none; font: inherit; line-height: 1.45; color: var(--ink);
@@ -377,10 +381,25 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 <textarea id="footNote" rows="1" placeholder="Escribe aquí…" aria-label="Notas de la sección"></textarea>
 <!-- third section only: one row per week of the month, the right column filled per month -->
 <div class="weeks" id="s3Weeks" hidden>
-  <div class="wk-l">Semana 1</div><textarea class="wk-r" data-w="0" rows="1" aria-label="Semana 1"></textarea>
-  <div class="wk-l">Semana 2</div><textarea class="wk-r" data-w="1" rows="1" aria-label="Semana 2"></textarea>
-  <div class="wk-l">Semana 3</div><textarea class="wk-r" data-w="2" rows="1" aria-label="Semana 3"></textarea>
-  <div class="wk-l">Semana 4</div><textarea class="wk-r" data-w="3" rows="1" aria-label="Semana 4"></textarea>
+  <div class="wk-l">Semana 1</div><div class="wk-r" data-w="0"></div>
+  <div class="wk-l">Semana 2</div><div class="wk-r" data-w="1"></div>
+  <div class="wk-l">Semana 3</div><div class="wk-r" data-w="2"></div>
+  <div class="wk-l">Semana 4</div><div class="wk-r" data-w="3"></div>
+</div>
+
+<!-- signature pad -->
+<div class="scrim" id="sigScrim" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="sigTitle">
+    <h2 id="sigTitle">Firmar</h2>
+    <p class="sub" id="sigSub"></p>
+    <svg class="sigpad" id="sigPad" viewBox="0 0 300 150" aria-label="Zona de firma"><path id="sigPath" d=""/></svg>
+    <div class="inline" style="justify-content:space-between;margin-top:12px">
+      <button class="link" id="sigClear">Borrar</button>
+      <button class="link" id="sigDelete" hidden>Eliminar esta firma</button>
+    </div>
+    <button class="go" id="sigSave">Guardar firma</button>
+    <div class="row-x"><button class="link" id="sigClose">Cancelar</button></div>
+  </div>
 </div>
 
 <!-- PIN -->
@@ -692,17 +711,68 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     if (document.activeElement !== el) el.value = (config.fixed && config.fixed.foot) || "";
     grow(el);
     $("s3Weeks").hidden = sec().type !== "s3";
-    if (sec().type === "s3") {
-      const wk = (months[viewKey] && months[viewKey].wk) || [];
-      $("s3Weeks").querySelectorAll(".wk-r").forEach(t => { if (document.activeElement !== t) t.value = wk[+t.dataset.w] || ""; grow(t); });
-    }
+    if (sec().type === "s3") drawSigs();
   }
-  $("s3Weeks").addEventListener("input", e => {
-    const t = e.target; if (!t.dataset.w) return;
-    const m = months[viewKey] || (months[viewKey] = {});
-    m.wk = (Array.isArray(m.wk) ? m.wk : ["", "", "", ""]).slice(); m.wk[+t.dataset.w] = t.value;
-    grow(t); saveMonth(viewKey);
+
+  // ---- signatures per week (third section) ----
+  // Each week of the month holds a list of signatures, saved as vector paths in a 300×150 box.
+  const sigsOf = w => { const s = (months[viewKey] || {}).sig; return (Array.isArray(s) && Array.isArray(s[w])) ? s[w] : []; };
+  function drawSigs() {
+    $("s3Weeks").querySelectorAll(".wk-r").forEach(cell => {
+      const w = +cell.dataset.w;
+      cell.innerHTML = sigsOf(w).map((g, i) => `<button class="sig-thumb" data-w="${w}" data-i="${i}" aria-label="Ver la firma ${i + 1} de la semana ${w + 1}"><svg viewBox="0 0 300 150"><path d="${g.d}"/></svg></button>`).join("")
+        + `<button class="sig-add" data-w="${w}" aria-label="Firmar la semana ${w + 1}">+</button>`;
+    });
+  }
+  let sigWeek = 0, sigIndex = -1, sigD = "", drawing = false;
+  function openSig(w, i) {
+    sigWeek = w; sigIndex = i;
+    const existing = i >= 0 ? sigsOf(w)[i] : null;
+    sigD = existing ? existing.d : "";
+    $("sigPath").setAttribute("d", sigD);
+    $("sigSub").textContent = existing
+      ? `Semana ${w + 1} de ${label(viewKey)}, firmada el ${new Date(existing.at).toLocaleString("es-ES", { dateStyle: "short", timeStyle: "short" })}.`
+      : `Semana ${w + 1} de ${label(viewKey)}. Firma con el dedo dentro del recuadro.`;
+    $("sigSave").hidden = !!existing; $("sigClear").hidden = !!existing; $("sigDelete").hidden = !existing;
+    $("sigDelete").dataset.armed = ""; $("sigDelete").textContent = "Eliminar esta firma";
+    $("sigScrim").hidden = false;
+  }
+  $("s3Weeks").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    openSig(+b.dataset.w, b.classList.contains("sig-thumb") ? +b.dataset.i : -1);
   });
+  const sigPoint = e => { const r = $("sigPad").getBoundingClientRect(); return [((e.clientX - r.left) / r.width * 300).toFixed(1), ((e.clientY - r.top) / r.height * 150).toFixed(1)]; };
+  $("sigPad").addEventListener("pointerdown", e => {
+    if (sigIndex >= 0) return;
+    drawing = true; $("sigPad").setPointerCapture(e.pointerId);
+    const [x, y] = sigPoint(e); sigD += `M${x} ${y}l0 0.1`; $("sigPath").setAttribute("d", sigD);
+  });
+  $("sigPad").addEventListener("pointermove", e => {
+    if (!drawing) return;
+    const [x, y] = sigPoint(e); sigD += `L${x} ${y}`; $("sigPath").setAttribute("d", sigD);
+  });
+  ["pointerup", "pointercancel"].forEach(ev => $("sigPad").addEventListener(ev, () => { drawing = false; }));
+  $("sigClear").onclick = () => { sigD = ""; $("sigPath").setAttribute("d", ""); };
+  $("sigClose").onclick = () => { $("sigScrim").hidden = true; };
+  function setSigs(w, list) {
+    const m = months[viewKey] = Object.assign({}, months[viewKey]);
+    const all = Array.isArray(m.sig) ? m.sig.map(x => (x || []).slice()) : [[], [], [], []];
+    while (all.length < 4) all.push([]);
+    all[w] = list; m.sig = all;
+    clearTimeout(timers["m" + viewKey]); delete timers["m" + viewKey]; delete pending["m" + viewKey];
+    writeDoc(monthPath(viewKey), m);
+  }
+  $("sigSave").onclick = () => {
+    if (!sigD) { toast("Firma dentro del recuadro antes de guardar."); return; }
+    setSigs(sigWeek, [...sigsOf(sigWeek), { d: sigD, at: new Date().toISOString() }]);
+    $("sigScrim").hidden = true; drawSigs(); toast("Firma guardada.");
+  };
+  $("sigDelete").onclick = () => {
+    const b = $("sigDelete");
+    if (b.dataset.armed !== "1") { b.dataset.armed = "1"; b.textContent = "Toca otra vez para eliminarla"; return; }
+    setSigs(sigWeek, sigsOf(sigWeek).filter((_, i) => i !== sigIndex));
+    $("sigScrim").hidden = true; drawSigs(); toast("Firma eliminada.");
+  };
   function render() {
     document.body.dataset.type = sec().type;
     renderFoot();
