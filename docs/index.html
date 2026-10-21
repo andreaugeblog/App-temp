@@ -206,15 +206,14 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
   background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; overflow: hidden;
 }
 .s2 textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
-.s2-scroll { margin-top: 14px; border: 1px solid var(--line); border-radius: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.s2-table { display: grid; grid-template-columns: minmax(9em, 1fr) auto; min-width: 100%; width: max-content; }
-.macro { display: flex; flex-direction: column; }
-.subs { display: grid; grid-template-columns: repeat(12, minmax(2.8em, 1fr)); }
-.subs > * { border-right: 1px solid var(--line); min-width: 0; }
-.subs > *:last-child { border-right: 0; }
-.subs input { border: 0; border-bottom: 1px solid var(--line); background: var(--surface); text-align: center; padding: 8px 2px; font: 500 .78rem var(--f-num); color: var(--ink); border-radius: 0; width: 100%; }
-.subs input:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
-.subs-body { flex: 1; min-height: 7em; }
+.s2-scroll { margin-top: 14px; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.s2-table { display: grid; grid-template-columns: 1fr 1fr; }
+.macro { display: flex; flex-direction: column; min-width: 0; }
+.rows12 { display: grid; }
+.rows12 input { border: 0; border-bottom: 1px solid var(--line); background: var(--surface); padding: 9px 10px; font: inherit; color: var(--ink); border-radius: 0; width: 100%; min-width: 0; }
+.rows12 input:last-child { border-bottom: 0; }
+.rows12 input::placeholder { color: var(--muted); opacity: .45; font-family: var(--f-num); font-size: .8rem; }
+.rows12 input:focus { outline: 2px solid var(--accent); outline-offset: -2px; }
 .macro + .macro { border-left: 1px solid var(--line); }
 .macro-title { width: 100%; border: 0; border-bottom: 1px solid var(--line); background: var(--today); padding: 10px 12px; font: 600 .92rem var(--f-ui); color: var(--ink); text-align: center; border-radius: 0; }
 .macro-title::placeholder { color: var(--muted); }
@@ -268,8 +267,7 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     <div class="s2-table" id="s2Table">
       <div class="macro m1"><input id="macro0" class="macro-title" placeholder="Titolo" aria-label="Titolo macro colonna 1"><div class="macro-body"></div></div>
       <div class="macro m2"><input id="macro1" class="macro-title" placeholder="Titolo" aria-label="Titolo macro colonna 2">
-        <div class="subs" id="subHead"></div>
-        <div class="subs subs-body" id="subBody"></div>
+        <div class="rows12" id="rows12"></div>
       </div>
     </div>
   </div>
@@ -643,14 +641,14 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     grow(t);
     const mt = config.macro || [];
     [0, 1].forEach(i => { const el = $("macro" + i); if (document.activeElement !== el) el.value = mt[i] || ""; });
-    const st = config.sub2 || [];
-    for (let i = 0; i < 12; i++) { const el = $("sub" + i); if (document.activeElement !== el) el.value = st[i] || ""; }
+    const r12 = (months[viewKey] && months[viewKey].r12) || [];
+    for (let i = 0; i < 12; i++) { const el = $("r12-" + i); if (document.activeElement !== el) el.value = r12[i] || ""; }
   }
-  $("subHead").innerHTML = Array.from({ length: 12 }, (_, i) => `<input id="sub${i}" data-i="${i}" size="1" placeholder="${i + 1}" aria-label="Titolo parte ${i + 1}">`).join("");
-  $("subBody").innerHTML = Array.from({ length: 12 }, () => "<div></div>").join("");
-  $("subHead").addEventListener("input", e => {
-    const i = +e.target.dataset.i;
-    config.sub2 = (config.sub2 || Array(12).fill("")).slice(); config.sub2[i] = e.target.value; saveConfig();
+  $("rows12").innerHTML = Array.from({ length: 12 }, (_, i) => `<input id="r12-${i}" data-i="${i}" size="1" placeholder="${i + 1}" aria-label="Riga ${i + 1}">`).join("");
+  $("rows12").addEventListener("input", e => {
+    const m = months[viewKey] || (months[viewKey] = {});
+    m.r12 = (m.r12 || Array(12).fill("")).slice(); m.r12[+e.target.dataset.i] = e.target.value;
+    saveMonth(viewKey);
   });
   [0, 1].forEach(i => $("macro" + i).addEventListener("input", e => {
     config.macro = (config.macro || ["", ""]).slice(); config.macro[i] = e.target.value; saveConfig();
@@ -988,7 +986,8 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
   // ---- export ----
   function filled(k) {
     const c = (months[k] && months[k].cells) || {};
-    const note = months[k] && months[k].note && months[k].note.trim() ? 1 : 0;
+    const note = (months[k] && months[k].note && months[k].note.trim() ? 1 : 0)
+      + ((months[k] && months[k].r12) || []).filter(v => v && v.trim()).length;
     return note + Object.values(c).reduce((n, row) => n + Object.keys(row).length, 0);
   }
   function openExport() {
