@@ -753,9 +753,8 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   // ---- third section: generation ----
   // Each colour of column 2 sets how often its rows of column 4 get a value: one column with
   // values, then the empty ones (blue every 7 days). Only the rows with a rule are generated.
-  const LETTERS = ["A", "B", "C", "D", "E", "F", "G"];
-  // the values the generator draws from, edited in the settings (A–G until changed)
-  const vals3 = () => Array.isArray(config.vals3) ? config.vals3 : LETTERS;
+  // the values the generator draws from, added in the settings (none to start with)
+  const vals3 = () => Array.isArray(config.vals3) ? config.vals3 : [];
   const pickVal = () => pick(vals3());
   function drawVals() {
     const v = vals3();
