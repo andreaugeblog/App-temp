@@ -822,10 +822,8 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
       // which section receives the file: same name, else this one if still empty, else a new one
       const low = fileTitle.toLowerCase();
       const same = low && sections.find(x => (x.name || "").trim().toLowerCase() === low);
-      const empty = !Object.keys(months).some(filled) && !namedRows().length;
-      $("impSec").innerHTML = sections.map(x => `<option value="${x.id}">${esc((x.name || "").trim() || "Sezione senza nome")}</option>`).join("")
-        + `<option value="new">+ Nuova sezione${fileTitle ? ": " + esc(fileTitle) : ""}</option>`;
-      $("impSec").value = same ? same.id : empty ? active : "new";
+      $("impSec").innerHTML = sections.map(x => `<option value="${x.id}">${esc((x.name || "").trim() || "Sezione senza nome")}</option>`).join("");
+      $("impSec").value = same ? same.id : active;
       $("impSecWrap").hidden = false;
       $("impList").hidden = false; $("impNote").hidden = false; $("impGo").disabled = false;
     } catch (e) {
@@ -838,12 +836,7 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
       .map(c => ({ p: parsed[+c.dataset.i], key: $("impList").querySelector(`select[data-i="${c.dataset.i}"]`).value }));
     if (!picks.length) { toast("Scegli almeno un foglio da importare."); return; }
     const target = $("impSec").value;
-    if (target === "new") {
-      const id = "s" + uid();
-      sections.push({ id, name: fileTitle, type: "numeri" });
-      writeDoc("registro/sezioni", { list: sections });
-      switchSection(id);
-    } else if (target !== active) switchSection(target);
+    if (target !== active) switchSection(target);
     if (!(sec().name || "").trim() && fileTitle) { sec().name = fileTitle; saveIndex(); renderSections(); }
     const rowFor = name => {
       const low = name.toLowerCase();
@@ -978,21 +971,12 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
   const sec = () => sections.find(x => x.id === active) || sections[0];
   const secTitle = () => (sec().name || "").trim() || "Sezione senza nome";
   function renderSections() {
-    $("secs").innerHTML = sections.map(x => `<button class="chip" data-sid="${x.id}" aria-current="${x.id === active}">${esc((x.name || "").trim() || "Sezione senza nome")}</button>`).join("")
-      + '<button class="chip add" id="addSec">+ Nuova sezione</button>';
+    $("secs").innerHTML = sections.map(x => `<button class="chip" data-sid="${x.id}" aria-current="${x.id === active}">${esc((x.name || "").trim() || "Sezione senza nome")}</button>`).join("");
     if (document.activeElement !== $("secName")) $("secName").value = sec().name || "";
   }
   function esc(t) { return t.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); }
   $("secs").addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b) return;
-    if (b.id === "addSec") {
-      const id = "s" + uid();
-      sections.push({ id, name: "", type: "numeri" });
-      writeDoc("registro/sezioni", { list: sections });
-      switchSection(id);
-      $("secName").focus();
-      return;
-    }
     if (b.dataset.sid !== active) switchSection(b.dataset.sid);
   });
   $("secName").addEventListener("input", () => {
