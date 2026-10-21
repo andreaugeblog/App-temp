@@ -203,7 +203,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 .s3 .s2-scroll.collapsed { --t1: 0px; --t2: 0px; --t3: 0px; }
 .s3 .s2-scroll.collapsed .s3-left { display: none; }
 .s2-table.s3-table { grid-template-columns: var(--t1) var(--t2) var(--t3) repeat(31, 3.1em); grid-template-rows: repeat(12, 2.6em); }
-.s3 .s3-left { position: sticky; z-index: 2; grid-row: 1 / -1; border-right: 1px solid var(--line); }
+.s3 .s3-left { position: sticky; z-index: 2; border-right: 1px solid var(--line); }
 .s3 .s3-left.l1 { left: 0; }
 .s3 .s3-left.l2 { left: var(--t1); }
 .s3 .s3-left.l3 { left: calc(var(--t1) + var(--t2)); }
@@ -711,8 +711,21 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   // column 4: 12 rows of 31 days; row 2 shows the day numbers
   // row 1 is a single cell across all 31 days, kept to the visible width and the same in every month
   const S3_ROWS = 12, S3_NUMBER_ROWS = [2];
+  // groups of the first three columns: [first row, rows spanned]
+  const S3_LEFT = [[[1, 2]], [[1, 2]], [[1, 2]]];
   function buildS3Table() {
-    let h = [1, 2, 3].map(c => `<textarea id="s3L${c}" data-f="l${c}" class="c1 s3-left l${c}" rows="1" style="grid-column:${c}" aria-label="Columna ${c}"></textarea>`).join("");
+    let h = "";
+    // first three columns: one cell per row with no visible lines, except the groups, which are outlined
+    for (const [c, groups] of S3_LEFT.entries()) {
+      let prevBoxed = false;
+      for (let r = 1; r <= S3_ROWS; ) {
+        const g = groups.find(x => x[0] === r), span = g ? g[1] : 1;
+        const cls = "c1 s3-left l" + (c + 1) + (g ? " boxed" : "") + (g && (r === 1 || prevBoxed) ? " at-top" : "");
+        prevBoxed = !!g;
+        h += `<textarea id="s3c${c + 1}-${r - 1}" data-f="s3c${c + 1}" data-i="${r - 1}" class="${cls}" rows="1" style="grid-column:${c + 1};grid-row:${r}/span ${span}" aria-label="Columna ${c + 1}, fila ${r}"></textarea>`;
+        r += span;
+      }
+    }
     h += '<input id="s3Head" class="s3-head" style="grid-row:1;grid-column:4/-1" aria-label="Columna 4, fila 1">';
     for (let r = 2; r <= S3_ROWS; r++) for (let d = 1; d <= 31; d++) {
       const pos = `grid-row:${r};grid-column:${d + 3}`, last = d === 31 ? " last" : "";
@@ -726,7 +739,12 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   $("s3Table").addEventListener("input", e => {
     const t = e.target, key = t.dataset.k;
     if (t.id === "s3Head") { config.fixed = Object.assign({}, config.fixed, { head4: t.value }); saveConfig(); return; }
-    if (t.dataset.f) { config.fixed = Object.assign({}, config.fixed, { [t.dataset.f]: t.value }); saveConfig(); fitS3(); return; }
+    if (t.dataset.f) {
+      const arr = (Array.isArray(config.fixed && config.fixed[t.dataset.f]) ? config.fixed[t.dataset.f] : []).slice();
+      arr[+t.dataset.i] = t.value;
+      config.fixed = Object.assign({}, config.fixed, { [t.dataset.f]: arr });
+      saveConfig(); fitS3(); return;
+    }
     if (!key) return;
     const m = months[viewKey] || (months[viewKey] = {});
     m[key] = (Array.isArray(m[key]) ? m[key] : []).slice(); m[key][+t.dataset.i] = t.value;
@@ -735,7 +753,10 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   // each of the first three columns is as wide as its longest word; text centred both ways
   function fitS3() {
     const sc = $("s3Scroll");
-    [1, 2, 3].forEach(c => sc.style.setProperty("--w" + c, Math.ceil(Math.max(48, wordWidth($("s3L" + c)))) + "px"));
+    [1, 2, 3].forEach(c => {
+      const w = Math.max(48, ...[...$("s3Table").querySelectorAll(".s3-left.l" + c)].map(wordWidth));
+      sc.style.setProperty("--w" + c, Math.ceil(w) + "px");
+    });
     $("s3Table").querySelectorAll("textarea").forEach(t => { fitCell(t); centerCell(t); });
   }
   function renderS3() {
@@ -746,7 +767,12 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     if (document.activeElement !== t) t.value = (config.fixed && config.fixed.note) || "";
     grow(t);
     const mo = months[viewKey] || {};
-    [1, 2, 3].forEach(c => { const el = $("s3L" + c); if (document.activeElement !== el) el.value = (config.fixed && config.fixed["l" + c]) || ""; });
+    const fx = config.fixed || {};
+    [1, 2, 3].forEach(c => {
+      // text written before the columns were split goes into their first cell
+      const arr = Array.isArray(fx["s3c" + c]) ? fx["s3c" + c] : (fx["l" + c] ? [fx["l" + c]] : []);
+      for (let i = 0; i < S3_ROWS; i++) { const el = $("s3c" + c + "-" + i); if (el && document.activeElement !== el) el.value = arr[i] || ""; }
+    });
     fitS3();
     const hd = $("s3Head");
     if (document.activeElement !== hd) hd.value = (config.fixed && config.fixed.head4) || "";
