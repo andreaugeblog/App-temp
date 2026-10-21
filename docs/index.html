@@ -671,18 +671,34 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
     $("s2M").textContent = MESI[m]; $("s2Y").textContent = y;
     $("monthName").textContent = label(viewKey);
     const t = $("s2Text");
-    if (document.activeElement !== t) { t.value = (months[viewKey] && months[viewKey].note) || ""; }
+    const fx = fixedCells();
+    if (document.activeElement !== t) { t.value = fx.note || ""; }
     grow(t);
     const mt = config.macro || [];
     [0, 1, 2].forEach(i => { const el = $("macro" + i); if (document.activeElement !== el) el.value = mt[i] || ""; });
     const mo = months[viewKey] || {};
-    const arr = k => Array.isArray(mo[k]) ? mo[k] : [];
-    for (const k of ["c1", "c1b", "cw", "cr", "cf", ...DAY_ROWS.filter(r => !NUMBER_ROWS.includes(r)).map(r => "d" + r)]) {
+    const arr = k => FIXED_KEYS.includes(k) ? (fx[k] || []) : Array.isArray(mo[k]) ? mo[k] : [];
+    for (const k of [...FIXED_KEYS, ...DAY_ROWS.filter(r => !NUMBER_ROWS.includes(r)).map(r => "d" + r)]) {
       const vals = arr(k);
       for (let i = 0; i < 31; i++) { const el = $(k + "-" + i); if (el && document.activeElement !== el) el.value = vals[i] || ""; }
     }
     fitAll();
   }
+  // Everything outside the day columns is the same in every month: it lives in the section's
+  // settings (config.fixed), not in the months. Data saved per month before this is carried over
+  // once from the latest month that has any.
+  const FIXED_KEYS = ["c1", "c1b", "cw", "cr", "cf"];
+  function fixedCells() {
+    if (config.fixed) return config.fixed;
+    const fx = { note: "" };
+    const keys = Object.keys(months).sort().reverse();
+    const src = keys.find(k => { const m = months[k]; return (m.note && m.note.trim()) || FIXED_KEYS.some(f => Array.isArray(m[f]) && m[f].some(v => v && String(v).trim())); });
+    if (src) { const m = months[src]; fx.note = m.note || ""; FIXED_KEYS.forEach(f => { if (Array.isArray(m[f])) fx[f] = m[f].slice(); }); }
+    // keep it only once there is something to keep: the months may still be loading
+    if (src) { config.fixed = fx; saveConfig(); }
+    return fx;
+  }
+  const ensureFixed = () => (config.fixed = fixedCells());
   // Left macro column = two sub-columns of 12 cells each. Groups: [first row, number of rows].
   // Single rows have no lines between them; a group spanning more rows gets its own outline.
   // Left macro column, built from bands of grid rows (row 1 = top cell beside the right title,
@@ -802,6 +818,12 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
     }
     const m = months[viewKey] || (months[viewKey] = {});
     const key = t.dataset.k;
+    if (FIXED_KEYS.includes(key)) {
+      const fx = ensureFixed();
+      fx[key] = (Array.isArray(fx[key]) ? fx[key] : []).slice(); fx[key][i] = t.value;
+      saveConfig();
+      return;
+    }
     // remember what is typed by hand so deleting generated values leaves it alone
     if (/^d\d+$/.test(key)) {
       const c = key.slice(1) + ":" + (i + 1), man = manCells(viewKey).filter(x => x !== c);
@@ -812,10 +834,9 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
     saveMonth(viewKey);
   });
   $("s2Text").addEventListener("input", e => {
-    const m = months[viewKey] || (months[viewKey] = {});
-    m.note = e.target.value;
+    ensureFixed().note = e.target.value;
     grow(e.target);
-    saveMonth(viewKey);
+    saveConfig();
   });
   $("prev2").onclick = () => { viewKey = shift(viewKey, -1); render(); };
   $("next2").onclick = () => { viewKey = shift(viewKey, 1); render(); };
@@ -1317,10 +1338,8 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
   // ---- export ----
   function filled(k) {
     const c = (months[k] && months[k].cells) || {};
-    const note = (months[k] && months[k].note && months[k].note.trim() ? 1 : 0)
-      + Object.keys(months[k] || {}).filter(key => /^d\d+$/.test(key)).reduce((n, key) => n + (months[k][key] || []).filter(v => v && String(v).trim()).length, 0)
-      + ["c1", "c1b", "cw", "cr", "cf"].reduce((n, key) => n + ((months[k] && Array.isArray(months[k][key]) && months[k][key]) || []).filter(v => v && v.trim()).length, 0);
-    return note + Object.values(c).reduce((n, row) => n + Object.keys(row).length, 0);
+    const days = Object.keys(months[k] || {}).filter(key => /^d\d+$/.test(key)).reduce((n, key) => n + (months[k][key] || []).filter(v => v && String(v).trim()).length, 0);
+    return days + Object.values(c).reduce((n, row) => n + Object.keys(row).length, 0);
   }
   // Everything the app holds: every section with its name, settings and months.
   const DATA_SHEET = "_datos";
@@ -1401,9 +1420,10 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
   }
   // readable copy of a second-section month: left cells in columns A–B, then days 1–31
   function buildS2Sheet(XLSX, k, cfg, mo) {
-    const at = (key, i) => (Array.isArray(mo[key]) && mo[key][i]) || "";
+    const fx = cfg.fixed || {};
+    const at = (key, i) => { const src = FIXED_KEYS.includes(key) ? fx[key] : mo[key]; return (Array.isArray(src) && src[i]) || ""; };
     const mt = cfg.macro || [];
-    const rows = [[mo.note || ""], [mt[0] || "", mt[2] || "", mt[1] || ""]];
+    const rows = [[fx.note || ""], [mt[0] || "", mt[2] || "", mt[1] || ""]];
     for (let r = 2; r <= 12; r++) {
       const i = r - 2;
       const left = r >= 7 && r <= 11 ? [at("cw", i), ""] : [at("c1", i), at("c1b", i)];
