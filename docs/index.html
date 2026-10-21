@@ -233,7 +233,6 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
 .pick { position: fixed; z-index: 70; display: flex; gap: 6px; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
 .pick button { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); font-size: 1.25rem; }
 .pick button.clear { font-size: .8rem; width: auto; padding: 0 10px; color: var(--muted); }
-.s2 .day.dnum { background: #fff1bf; color: #5d6b77; }
 .s2 .dnum { display: grid; place-items: center; color: var(--muted); font-weight: 500; }
 .s2 .macro-title { border-bottom: 1px solid var(--line); padding: 10px 12px; font-weight: 600; font-size: .92rem; text-align: center; }
 .s2 .macro-title.left { border-bottom: 0; border-right: 1px solid var(--line); }
@@ -752,6 +751,8 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
     11: { text: "✓", make: () => "✓" },
     12: { text: "F o A, igual en las columnas del grupo", shared: () => pick(["F", "A"]) }
   };
+  // rows painted yellow like the generated ones without being generated
+  const YELLOW_ROWS = [9];
   // rows whose cells are filled from a ✓ / ✗ choice instead of the keyboard
   const CHECK_ROWS = [8, 10, 11];
   function buildS2Table() {
@@ -783,7 +784,7 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
       const pos = `grid-row:${r};grid-column:${d + 2}`, last = d === 31 ? " last" : "";
       h += NUMBER_ROWS.includes(r)
         ? `<div class="day dnum${last}" style="${pos}">${d}</div>`
-        : `<input id="d${r}-${d - 1}" data-i="${d - 1}" data-k="d${r}" size="1" class="day${last}${GEN_ROWS.includes(r) ? " gen" : ""}${CHECK_ROWS.includes(r) ? " check" : ""}" style="${pos}"${CHECK_ROWS.includes(r) ? " readonly" : ""} aria-label="Fila ${r}, día ${d}">`;
+        : `<input id="d${r}-${d - 1}" data-i="${d - 1}" data-k="d${r}" size="1" class="day${last}${GEN_ROWS.includes(r) || YELLOW_ROWS.includes(r) ? " gen" : ""}${CHECK_ROWS.includes(r) ? " check" : ""}" style="${pos}"${CHECK_ROWS.includes(r) ? " readonly" : ""} aria-label="Fila ${r}, día ${d}">`;
     }
     $("s2Table").innerHTML = h;
   }
