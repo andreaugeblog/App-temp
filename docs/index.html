@@ -207,6 +207,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 .s3 .s3-left.l1 { left: 0; }
 .s3 .s3-left.l2 { left: var(--t1); }
 .s3 .s3-left.l3 { left: calc(var(--t1) + var(--t2)); }
+.s3 .s3-head { position: sticky; z-index: 2; justify-self: start; left: calc(var(--t1) + var(--t2) + var(--t3)); width: calc(100cqw - var(--t1) - var(--t2) - var(--t3)); border-bottom: 1px solid var(--line); padding: 0 10px; text-align: center; }
 .s2 { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
 .s2-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: start; }
 .s2-month { display: flex; align-items: center; gap: 2px; }
@@ -705,10 +706,12 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 
   // ---- third section (frame only for now) ----
   // column 4: 12 rows of 31 days; row 2 shows the day numbers
+  // row 1 is a single cell across all 31 days, kept to the visible width and the same in every month
   const S3_ROWS = 12, S3_NUMBER_ROWS = [2];
   function buildS3Table() {
     let h = [1, 2, 3].map(c => `<div class="s3-left l${c}" style="grid-column:${c}"></div>`).join("");
-    for (let r = 1; r <= S3_ROWS; r++) for (let d = 1; d <= 31; d++) {
+    h += '<input id="s3Head" class="s3-head" style="grid-row:1;grid-column:4/-1" aria-label="Columna 4, fila 1">';
+    for (let r = 2; r <= S3_ROWS; r++) for (let d = 1; d <= 31; d++) {
       const pos = `grid-row:${r};grid-column:${d + 3}`, last = d === 31 ? " last" : "";
       h += S3_NUMBER_ROWS.includes(r)
         ? `<div class="day dnum${last}" style="${pos}">${d}</div>`
@@ -718,7 +721,9 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   }
   buildS3Table();
   $("s3Table").addEventListener("input", e => {
-    const t = e.target, key = t.dataset.k; if (!key) return;
+    const t = e.target, key = t.dataset.k;
+    if (t.id === "s3Head") { config.fixed = Object.assign({}, config.fixed, { head4: t.value }); saveConfig(); return; }
+    if (!key) return;
     const m = months[viewKey] || (months[viewKey] = {});
     m[key] = (Array.isArray(m[key]) ? m[key] : []).slice(); m[key][+t.dataset.i] = t.value;
     saveMonth(viewKey);
@@ -731,7 +736,9 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     if (document.activeElement !== t) t.value = (config.fixed && config.fixed.note) || "";
     grow(t);
     const mo = months[viewKey] || {};
-    for (let r = 1; r <= S3_ROWS; r++) {
+    const hd = $("s3Head");
+    if (document.activeElement !== hd) hd.value = (config.fixed && config.fixed.head4) || "";
+    for (let r = 3; r <= S3_ROWS; r++) {
       if (S3_NUMBER_ROWS.includes(r)) continue;
       const a = Array.isArray(mo["e" + r]) ? mo["e" + r] : [];
       for (let i = 0; i < 31; i++) { const el = $("e" + r + "-" + i); if (document.activeElement !== el) el.value = a[i] || ""; }
