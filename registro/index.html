@@ -172,7 +172,9 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
 .file:focus-within { border-color: var(--accent); }
 
 /* Second section */
-body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .sechead { display: none; }
+body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .sechead,
+body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .sechead { display: none; }
+.s3 { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-height: 12em; }
 .s2 { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
 .s2-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: start; }
 .s2-month { display: flex; align-items: center; gap: 2px; }
@@ -252,6 +254,9 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
 </div>
 
 <div class="sheet" id="sheet"><table id="grid"></table></div>
+
+<!-- Third section: to be built -->
+<section class="s3" id="s3" hidden></section>
 
 <!-- Second section: its own layout, built step by step -->
 <section class="s2" id="s2" hidden>
@@ -431,7 +436,7 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
   // ---- state & storage ----
   // Each section has its own rows, settings and months. The first section ("main")
   // keeps the original paths so data saved before sections existed stays in place.
-  let sections = [{ id: "main", name: "", type: "numeri" }, { id: "s2", name: "", type: "s2" }];
+  let sections = [{ id: "main", name: "", type: "numeri" }, { id: "s2", name: "", type: "s2" }, { id: "s3", name: "", type: "s3" }];
   let active = "main";
   let appTitle = "";        // name shown at the top; empty = "Registro Mensual"
   let config = defaults();
@@ -445,7 +450,7 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
   const lsKey = (sid = active) => sid === "main" ? LS : LS + ":" + sid;
 
   // sections built into the app, each with its own structure
-  const BUILT_IN = [{ id: "main", name: "", type: "numeri" }, { id: "s2", name: "", type: "s2" }];
+  const BUILT_IN = [{ id: "main", name: "", type: "numeri" }, { id: "s2", name: "", type: "s2" }, { id: "s3", name: "", type: "s3" }];
   // only the built-in sections are kept; anything created earlier is removed with its data
   function withBuiltIn(list) {
     list.filter(x => !BUILT_IN.some(b => b.id === x.id)).forEach(dropSection);
@@ -557,7 +562,9 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
   function render() {
     document.body.dataset.type = sec().type;
     $("s2").hidden = sec().type !== "s2";
+    $("s3").hidden = sec().type !== "s3";
     if (sec().type === "s2") { renderS2(); return; }
+    if (sec().type === "s3") return;
     const nDays = daysIn(viewKey);
     const isCur = viewKey === curKey;
     const today = now.getDate();
@@ -584,6 +591,7 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
   // Refresh values from new data without rebuilding the field being typed in.
   function refresh() {
     if (sec().type === "s2") { renderS2(); return; }
+    if (sec().type === "s3") return;
     const sameShape = [...document.querySelectorAll("#grid tbody tr")].map(t => t.dataset.row).join() === config.rows.map(r => r.id).join();
     const focus = document.activeElement;
     if (!sameShape || !$("grid").contains(focus)) { render(); return; }
@@ -883,7 +891,7 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
   document.addEventListener("click", e => { if (!menu.hidden && !menu.contains(e.target)) setMenu(false); });
   $("goToday").onclick = () => { setMenu(false); viewKey = curKey; render(); };
   // the generation settings belong to the numbers section: open it there from any section
-  $("openSettings").onclick = () => { setMenu(false); openPin(() => sec().type === "s2" ? openSettings2() : openSettings()); };
+  $("openSettings").onclick = () => { setMenu(false); openPin(() => sec().type === "s2" ? openSettings2() : sec().type === "s3" ? toast("Esta sección todavía no tiene ajustes.") : openSettings()); };
   $("openDelete").onclick = () => { setMenu(false); openPin(openDelete); };
   $("openImport").onclick = () => { setMenu(false); openImport(); };
 
@@ -1481,7 +1489,7 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
       for (const k of Object.keys(x.months).sort()) {
         if (!monthCount(x.months[k])) continue;
         if (x.type === "numeri") add(buildSheet(XLSX, k, x.config, x.months), label(k));
-        else add(buildS2Sheet(XLSX, k, x.config, x.months[k]), "S2 " + label(k));
+        else if (x.type === "s2") add(buildS2Sheet(XLSX, k, x.config, x.months[k]), "S2 " + label(k));
       }
     }
     // the full app state, read back by Importar: JSON split in cells under Excel's 32,767-character limit
