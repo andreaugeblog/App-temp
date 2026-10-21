@@ -712,7 +712,10 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   // row 1 is a single cell across all 31 days, kept to the visible width and the same in every month
   const S3_ROWS = 12, S3_NUMBER_ROWS = [2];
   // groups of the first three columns: [first row, rows spanned]
-  const S3_LEFT = [[[1, 2]], [[1, 2]], [[1, 2]]];
+  const S3_SINGLE = Array.from({ length: 10 }, (_, i) => [i + 3, 1]);   // rows 3–12, one per row of column 4
+  const S3_LEFT = [[[1, 2], ...S3_SINGLE], [[1, 2], ...S3_SINGLE], [[1, 2], ...S3_SINGLE]];
+  // colours of the middle column by grid row (its 2nd–6th rows blue, 7th–8th yellow, 9th–10th red, 11th green)
+  const S3_TINT = { 3: "#d6e6fb", 4: "#d6e6fb", 5: "#d6e6fb", 6: "#d6e6fb", 7: "#d6e6fb", 8: "#fff1bf", 9: "#fff1bf", 10: "#fbd9d6", 11: "#fbd9d6", 12: "#d6f0d8" };
   function buildS3Table() {
     let h = "";
     // first three columns: one cell per row with no visible lines, except the groups, which are outlined
@@ -722,7 +725,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
         const g = groups.find(x => x[0] === r), span = g ? g[1] : 1;
         const cls = "c1 s3-left l" + (c + 1) + (g ? " boxed" : "") + (g && (r === 1 || prevBoxed) ? " at-top" : "");
         prevBoxed = !!g;
-        h += `<textarea id="s3c${c + 1}-${r - 1}" data-f="s3c${c + 1}" data-i="${r - 1}" class="${cls}" rows="1" style="grid-column:${c + 1};grid-row:${r}/span ${span}" aria-label="Columna ${c + 1}, fila ${r}"></textarea>`;
+        h += `<textarea id="s3c${c + 1}-${r - 1}" data-f="s3c${c + 1}" data-i="${r - 1}" class="${cls}" rows="1" style="grid-column:${c + 1};grid-row:${r}/span ${span}${c === 1 && S3_TINT[r] ? `;background:${S3_TINT[r]};color:#17222b` : ""}" aria-label="Columna ${c + 1}, fila ${r}"></textarea>`;
         r += span;
       }
     }
