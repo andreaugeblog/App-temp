@@ -192,6 +192,22 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
 .file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .file:focus-within { border-color: var(--accent); }
 
+/* Second section */
+body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .sechead .month,
+body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-type="s2"] #openImport { display: none; }
+.s2 { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+.s2-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: start; }
+.s2-month { display: flex; align-items: center; gap: 2px; }
+.s2-when { display: grid; text-align: center; min-width: 5.6em; line-height: 1.1; }
+.s2-when span:first-child { font-weight: 700; font-size: 1.15rem; }
+.s2-when span:last-child { font-family: var(--f-num); color: var(--muted); font-size: .9rem; margin-top: 2px; }
+.s2 textarea {
+  width: 100%; min-height: 4.8em; resize: vertical; font: inherit; line-height: 1.45; color: var(--ink);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; overflow: hidden;
+}
+.s2 textarea:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+@media (max-width: 420px) { .s2-when { min-width: 4.6em; } .s2-when span:first-child { font-size: 1rem; } }
+
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 60; background: var(--ink); color: var(--bg); padding: 11px 16px; border-radius: 10px; font-size: .9rem; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
 </style>
 
@@ -223,6 +239,18 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
 </div>
 
 <div class="sheet" id="sheet"><table id="grid"></table></div>
+
+<!-- Second section: its own layout, built step by step -->
+<section class="s2" id="s2" hidden>
+  <div class="s2-head">
+    <div class="s2-month">
+      <button class="icon-btn" id="prev2" aria-label="Mese precedente">&#8249;</button>
+      <div class="s2-when"><span id="s2M"></span><span id="s2Y"></span></div>
+      <button class="icon-btn" id="next2" aria-label="Mese successivo">&#8250;</button>
+    </div>
+    <textarea id="s2Text" rows="3" placeholder="Scrivi qui…" aria-label="Testo del mese"></textarea>
+  </div>
+</section>
 
 <div class="under">
   <button class="ghost" id="addRow">+ Aggiungi voce</button>
@@ -369,7 +397,7 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
   // ---- state & storage ----
   // Each section has its own rows, settings and months. The first section ("main")
   // keeps the original paths so data saved before sections existed stays in place.
-  let sections = [{ id: "main", name: "", type: "numeri" }];
+  let sections = [{ id: "main", name: "", type: "numeri" }, { id: "s2", name: "", type: "s2" }];
   let active = "main";
   let config = defaults();
   let months = {};          // "YYYY-MM" -> { cells: { rowId: { day: number } } }
@@ -381,13 +409,20 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
   const monthPath = (k, sid = active) => monthsCol(sid) + "/" + k;
   const lsKey = (sid = active) => sid === "main" ? LS : LS + ":" + sid;
 
+  // sections built into the app, each with its own structure
+  const BUILT_IN = [{ id: "main", name: "", type: "numeri" }, { id: "s2", name: "", type: "s2" }];
+  function withBuiltIn(list) {
+    const out = list.slice();
+    BUILT_IN.forEach(b => { if (!out.some(x => x.id === b.id)) out.push(Object.assign({}, b)); });
+    return out;
+  }
   function loadLocal() {
     config = defaults(); months = {};
     try {
       const raw = localStorage.getItem(lsKey());
       if (raw) { const s = JSON.parse(raw); if (s.config) config = Object.assign(defaults(), s.config); if (s.months) months = s.months; }
       const idx = JSON.parse(localStorage.getItem(LS + ":sezioni") || "null");
-      if (idx && idx.list && idx.list.length) sections = idx.list;
+      if (idx && idx.list && idx.list.length) sections = withBuiltIn(idx.list);
     } catch (e) {}
   }
   function saveLocal() {
@@ -478,6 +513,10 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
   const queueReassign = (ms = 1200) => later("reassign", checkReassign, ms);
 
   function render() {
+    document.body.dataset.type = sec().type;
+    $("sheetLabel").textContent = sec().type === "s2" ? "Seconda sezione" : "Sezione numeri";
+    $("s2").hidden = sec().type !== "s2";
+    if (sec().type === "s2") { renderS2(); return; }
     const nDays = daysIn(viewKey);
     const isCur = viewKey === curKey;
     const today = now.getDate();
@@ -503,6 +542,7 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
 
   // Refresh values from new data without rebuilding the field being typed in.
   function refresh() {
+    if (sec().type === "s2") { renderS2(); return; }
     const sameShape = [...document.querySelectorAll("#grid tbody tr")].map(t => t.dataset.row).join() === config.rows.map(r => r.id).join();
     const focus = document.activeElement;
     if (!sameShape || !$("grid").contains(focus)) { render(); return; }
@@ -568,6 +608,25 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
     $("delRow").dataset.armed = ""; $("delRow").textContent = "− Togli ultima voce";
     config.rows.pop(); render(); saveConfig(); checkReassign();
   };
+
+  // ---- second section ----
+  function grow(t) { t.style.height = "auto"; t.style.height = t.scrollHeight + 2 + "px"; }
+  function renderS2() {
+    const { y, m } = parseKey(viewKey);
+    $("s2M").textContent = MESI[m]; $("s2Y").textContent = y;
+    $("monthName").textContent = label(viewKey);
+    const t = $("s2Text");
+    if (document.activeElement !== t) { t.value = (months[viewKey] && months[viewKey].note) || ""; }
+    grow(t);
+  }
+  $("s2Text").addEventListener("input", e => {
+    const m = months[viewKey] || (months[viewKey] = {});
+    m.note = e.target.value;
+    grow(e.target);
+    saveMonth(viewKey);
+  });
+  $("prev2").onclick = () => { viewKey = shift(viewKey, -1); render(); };
+  $("next2").onclick = () => { viewKey = shift(viewKey, 1); render(); };
 
   $("prevM").onclick = () => { viewKey = shift(viewKey, -1); render(); };
   $("nextM").onclick = () => { viewKey = shift(viewKey, 1); render(); };
@@ -747,7 +806,8 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
     $("delCur").textContent = label(viewKey);
     document.querySelector('input[name="delMode"][value="month"]').checked = true;
     $("delNames").checked = false;
-    $("delSecOpt").hidden = sections.length < 2;
+    $("delSecOpt").hidden = sections.length < 2 || BUILT_IN.some(b => b.id === active);
+    $("delNames").parentElement.hidden = sec().type !== "numeri";
     $("delSecName").textContent = secTitle();
     delSummary();
     $("delScrim").hidden = false;
@@ -892,7 +952,8 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
   // ---- export ----
   function filled(k) {
     const c = (months[k] && months[k].cells) || {};
-    return Object.values(c).reduce((n, row) => n + Object.keys(row).length, 0);
+    const note = months[k] && months[k].note && months[k].note.trim() ? 1 : 0;
+    return note + Object.values(c).reduce((n, row) => n + Object.keys(row).length, 0);
   }
   function openExport() {
     const list = monthSpan();
@@ -1058,7 +1119,8 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
       if (s.metadata.hasPendingWrites || timers.idx || !s.exists) return;
       const list = JSON.parse(JSON.stringify(s.data().list || []));
       if (!list.length) return;
-      sections = list;
+      sections = withBuiltIn(list);
+      if (sections.length !== list.length) saveIndex();
       if (!sections.some(x => x.id === active)) switchSection(sections[0].id);
       else { renderSections(); saveLocal(); }
     }, () => {});
