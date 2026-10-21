@@ -729,9 +729,14 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     4: { every: 7, make: () => pick(LETTERS) },
     5: { every: 7, make: () => pick(LETTERS) },
     6: { every: 7, make: () => pick(LETTERS) },
-    7: { every: 7, make: () => pick(LETTERS) }
+    7: { every: 7, make: () => pick(LETTERS) },
+    8: { every: 15, make: () => pick(LETTERS) },
+    9: { every: 15, make: () => pick(LETTERS) }
   };
-  const S3_GEN_TEXT = { 7: "azules (filas 2ª–6ª): una columna con una letra de la A a la G, luego 6 vacías" };
+  const S3_GEN_TEXT = {
+    7: "azules (2ª–6ª): una columna con una letra de la A a la G, luego 6 vacías",
+    15: "amarillas (7ª–8ª): una columna con una letra de la A a la G, luego 14 vacías"
+  };
   const g3Defaults = () => ({ start: curKey + "-01" });
   function g3Cells(g) {
     const out = [], first = dayNum(g.start), last = dayNum(todayIso());
@@ -753,7 +758,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   function openSettings3() {
     const g = Object.assign(g3Defaults(), config.gen3 || {});
     $("g3Start").value = g.start;
-    $("g3Rules").innerHTML = Object.values(S3_GEN_TEXT).map(t => "Filas " + t).join("<br>") + "<br>Las filas amarillas, rojas y verde todavía no generan valores.";
+    $("g3Rules").innerHTML = Object.values(S3_GEN_TEXT).map(t => "Filas " + t).join("<br>") + "<br>Las filas rojas y verde todavía no generan valores.";
     summarize3();
     $("set3Scrim").hidden = false;
   }
