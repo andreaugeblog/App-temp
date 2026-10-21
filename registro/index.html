@@ -170,8 +170,7 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
 .file:focus-within { border-color: var(--accent); }
 
 /* Second section */
-body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .sechead .month,
-body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-type="s2"] #openImport { display: none; }
+body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .sechead .month { display: none; }
 .s2 { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
 .s2-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: start; }
 .s2-month { display: flex; align-items: center; gap: 2px; }
@@ -317,8 +316,9 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
 <div class="scrim" id="impScrim" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="impTitle">
     <h2 id="impTitle">Importar</h2>
-    <p class="sub">Carga un archivio Excel (también descargado de Hojas de cálculo de Google). Cada hoja con el nombre de un mes, por ejemplo "Mayo 2026", va al mes correspondiente.</p>
+    <p class="sub">Carga el archivo exportado desde la app: la app queda exactamente igual que la de quien lo exportó, con todas las secciones, celdas y ajustes. También acepta hojas sueltas con el nombre de un mes, por ejemplo "Mayo 2026".</p>
     <label class="file" id="impDrop"><input type="file" id="impFile" accept=".xlsx,.xls,.ods,.csv"><b>Elige el archivo</b><span id="impFileName">.xlsx, .xls, .ods o .csv</span></label>
+    <div class="summary" id="impFull" hidden></div>
     <div class="mlist" id="impList" hidden></div>
     <label class="field" id="impSecWrap" hidden><span>Importar en la sección</span><select id="impSec"></select></label>
     <p class="sub" id="impNote" hidden>Los meses importados sustituyen los valores que ya hay en esos meses. Los elementos se emparejan por nombre; los nuevos se añaden al final.</p>
@@ -350,13 +350,9 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
 <div class="scrim" id="expScrim" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="expTitle">
     <h2 id="expTitle">Exportar</h2>
-    <p class="sub">Elige los meses: cada mes se convierte en una hoja del archivo Excel, que también se abre con Hojas de cálculo de Google.</p>
-    <div class="inline" style="margin-bottom:10px">
-      <button class="link" id="expAll">Seleccionar todos</button>
-      <button class="link" id="expNone">Ninguno</button>
-    </div>
+    <p class="sub">Se exporta todo en un solo archivo Excel: las dos secciones, todos los meses, lo escrito en cada celda, los nombres y los ajustes. Quien lo importe tendrá la app exactamente igual. El archivo también se abre con Hojas de cálculo de Google.</p>
     <div class="mlist" id="expList"></div>
-    <button class="go" id="expGo">Exportar a Excel</button>
+    <button class="go" id="expGo">Exportar todo</button>
     <div class="row-x"><button class="link" id="expClose">Cerrar</button></div>
   </div>
 </div>
@@ -742,7 +738,8 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
   $("dotsBtn").onclick = e => { e.stopPropagation(); setMenu(menu.hidden); };
   document.addEventListener("click", e => { if (!menu.hidden && !menu.contains(e.target)) setMenu(false); });
   $("goToday").onclick = () => { setMenu(false); viewKey = curKey; render(); };
-  $("openSettings").onclick = () => { setMenu(false); openPin(openSettings); };
+  // the generation settings belong to the numbers section: open it there from any section
+  $("openSettings").onclick = () => { setMenu(false); openPin(() => { if (sec().type !== "numeri") switchSection("main"); openSettings(); }); };
   $("openDelete").onclick = () => { setMenu(false); openPin(openDelete); };
   $("openImport").onclick = () => { setMenu(false); openImport(); };
 
@@ -956,6 +953,7 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
   // ---- import ----
   let parsed = [], fileTitle = "";
   function openImport() {
+    fullData = null; $("impFull").hidden = true; disarmImp();
     parsed = []; $("impFile").value = ""; $("impFileName").textContent = ".xlsx, .xls, .ods o .csv";
     $("impList").hidden = true; $("impNote").hidden = true; $("impSecWrap").hidden = true; $("impGo").disabled = true;
     loadXlsx().catch(() => {});
@@ -992,12 +990,35 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     }
     return rows;
   }
+  let fullData = null;
+  function readFull(XLSX, wb) {
+    const ws = wb.Sheets[DATA_SHEET]; if (!ws) return null;
+    const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: "" });
+    try {
+      const d = JSON.parse(aoa.map(r => String(r[0] ?? "")).join(""));
+      return d && d.app === "registro-mensual" && Array.isArray(d.sections) ? d : null;
+    } catch (e) { return null; }
+  }
   $("impFile").addEventListener("change", async () => {
     const f = $("impFile").files[0]; if (!f) return;
     $("impFileName").textContent = f.name;
+    fullData = null; $("impFull").hidden = true; disarmImp();
     try {
       const XLSX = await loadXlsx();
       const wb = XLSX.read(await f.arrayBuffer(), { type: "array" });
+      fullData = readFull(XLSX, wb);
+      if (fullData) {
+        const when = fullData.exportedAt ? new Date(fullData.exportedAt).toLocaleString("es-ES", { dateStyle: "long", timeStyle: "short" }) : "";
+        const lines = fullData.sections.filter(x => BUILT_IN.some(b => b.id === x.id)).map(x => {
+          const n = Object.keys(x.months || {}).length;
+          return `<b>${esc((x.name || "").trim() || "Sección sin nombre")}</b>: ${n} ${n === 1 ? "mes" : "meses"}`;
+        });
+        $("impFull").innerHTML = `Copia completa${when ? " del " + when : ""}.<br>${lines.join("<br>")}<br>Sustituye todos los datos de esta app: secciones, celdas y ajustes.`;
+        $("impFull").hidden = false;
+        $("impList").hidden = true; $("impNote").hidden = true; $("impSecWrap").hidden = true;
+        $("impGo").disabled = false; $("impGo").textContent = "Importar todo";
+        return;
+      }
       fileTitle = String((wb.Props && wb.Props.Title) || "").trim();
       parsed = wb.SheetNames.map(n => ({ sheet: n, key: sheetMonth(n), rows: readSheet(XLSX, wb.Sheets[n]) })).filter(p => p.rows && p.rows.length);
       if (!parsed.length) { $("impList").hidden = false; $("impList").innerHTML = '<p class="empty">No he encontrado en el archivo una fila con los días 1, 2, 3… y los nombres en la columna de la izquierda.</p>'; $("impGo").disabled = true; return; }
@@ -1020,7 +1041,39 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     }
   });
   $("impClose").onclick = () => { $("impScrim").hidden = true; };
-  $("impGo").onclick = () => {
+  function disarmImp() { $("impGo").dataset.armed = ""; $("impGo").textContent = "Importar"; }
+  // replace every section, its settings and months with the ones in the file
+  async function applyFull(d) {
+    flush();
+    unsubs.forEach(u => u()); unsubs = [];
+    const incoming = d.sections.filter(x => BUILT_IN.some(b => b.id === x.id));
+    sections = withBuiltIn(incoming.map(x => ({ id: x.id, name: x.name || "", type: x.type })));
+    for (const b of sections) {
+      const x = incoming.find(y => y.id === b.id) || {};
+      const cfg = Object.assign(defaults(), x.config || {});
+      const ms = x.months || {};
+      try { localStorage.setItem(lsKey(b.id), JSON.stringify({ config: cfg, months: ms })); } catch (e) {}
+      if (db) {
+        writeDoc(cfgPath(b.id), cfg);
+        try {
+          const q = await db.collection(monthsCol(b.id)).get();
+          q.docs.forEach(doc => { if (!(doc.id in ms)) deleteDoc(monthsCol(b.id) + "/" + doc.id); });
+        } catch (e) {}
+        Object.keys(ms).forEach(k => writeDoc(monthsCol(b.id) + "/" + k, ms[k]));
+      }
+    }
+    try { localStorage.setItem(LS + ":sezioni", JSON.stringify({ list: sections, active })); } catch (e) {}
+    if (db) writeDoc("registro/sezioni", { list: sections });
+    switchSection(sections.some(x => x.id === active) ? active : sections[0].id, true);
+  }
+  $("impGo").onclick = async () => {
+    if (fullData) {
+      if ($("impGo").dataset.armed !== "1") { $("impGo").dataset.armed = "1"; $("impGo").textContent = "Toca otra vez para sustituir todo"; return; }
+      await applyFull(fullData);
+      $("impScrim").hidden = true; disarmImp();
+      toast("Importación completa: la app es ahora igual a la del archivo.");
+      return;
+    }
     const picks = [...$("impList").querySelectorAll('input[type=checkbox]')].filter(c => c.checked)
       .map(c => ({ p: parsed[+c.dataset.i], key: $("impList").querySelector(`select[data-i="${c.dataset.i}"]`).value }));
     if (!picks.length) { toast("Elige al menos una hoja para importar."); return; }
@@ -1063,19 +1116,51 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
       + ["c1", "c1b", "cw", "cr", "cf"].reduce((n, key) => n + ((months[k] && Array.isArray(months[k][key]) && months[k][key]) || []).filter(v => v && v.trim()).length, 0);
     return note + Object.values(c).reduce((n, row) => n + Object.keys(row).length, 0);
   }
-  function openExport() {
-    const list = monthSpan();
-    $("expList").innerHTML = list.reverse().map(k => {
-      const n = filled(k);
-      return `<label><input type="checkbox" value="${k}"${n ? " checked" : ""}>${label(k)}<span class="cnt">${n ? n + " valores" : "vacío"}</span></label>`;
-    }).join("");
+  // Everything the app holds: every section with its name, settings and months.
+  const DATA_SHEET = "_datos";
+  let gathered = null;
+  async function gatherAll() {
+    flush(); saveLocal();
+    const out = [];
+    for (const x of sections) {
+      let cfg, ms;
+      if (x.id === active) { cfg = config; ms = months; }
+      else if (db) {
+        const c = await db.doc(cfgPath(x.id)).get().catch(() => null);
+        cfg = c && c.exists ? c.data() : defaults();
+        ms = {};
+        const q = await db.collection(monthsCol(x.id)).get().catch(() => null);
+        if (q) q.docs.forEach(doc => { ms[doc.id] = doc.data(); });
+      } else {
+        let st = {};
+        try { st = JSON.parse(localStorage.getItem(lsKey(x.id)) || "{}"); } catch (e) {}
+        cfg = Object.assign(defaults(), st.config || {}); ms = st.months || {};
+      }
+      out.push(JSON.parse(JSON.stringify({ id: x.id, name: x.name || "", type: x.type, config: cfg, months: ms })));
+    }
+    return { app: "registro-mensual", version: 1, exportedAt: new Date().toISOString(), sections: out };
+  }
+  const monthCount = mo => {
+    let n = 0;
+    for (const [k, v] of Object.entries(mo || {})) {
+      if (k === "cells") n += Object.values(v || {}).reduce((a, r) => a + Object.keys(r).length, 0);
+      else if (Array.isArray(v)) n += v.filter(x => x != null && String(x).trim()).length;
+      else if (typeof v === "string" && v.trim()) n++;
+    }
+    return n;
+  };
+  async function openExport() {
+    $("expList").innerHTML = '<p class="empty">Preparando…</p>';
     $("expScrim").hidden = false;
     loadXlsx().catch(() => {});
+    gathered = await gatherAll();
+    $("expList").innerHTML = gathered.sections.map(x => {
+      const keys = Object.keys(x.months);
+      const n = keys.reduce((a, k) => a + monthCount(x.months[k]), 0);
+      return `<label><span>${esc(x.name.trim() || "Sección sin nombre")}</span><span class="cnt">${keys.length} ${keys.length === 1 ? "mes" : "meses"} · ${n} valores</span></label>`;
+    }).join("");
   }
-  const expChecks = () => [...$("expList").querySelectorAll("input")];
   $("openExport").onclick = () => { setMenu(false); openExport(); };
-  $("expAll").onclick = () => expChecks().forEach(c => c.checked = true);
-  $("expNone").onclick = () => expChecks().forEach(c => c.checked = false);
   $("expClose").onclick = () => { $("expScrim").hidden = true; };
 
   let xlsxLib;
@@ -1088,12 +1173,12 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
       document.head.appendChild(s);
     }));
   }
-  function buildSheet(XLSX, k) {
+  function buildSheet(XLSX, k, cfg, ms) {
     const n = daysIn(k);
-    const cells = (months[k] && months[k].cells) || {};
+    const cells = (ms[k] && ms[k].cells) || {};
     const head = ["Elemento"]; for (let d = 1; d <= n; d++) head.push(d);
     const rows = [head];
-    config.rows.forEach((r, i) => {
+    cfg.rows.forEach((r, i) => {
       const vals = cells[r.id] || {};
       if (!r.name.trim() && !Object.keys(vals).length) return;
       const line = [r.name.trim() || "Elemento " + (i + 1)];
@@ -1108,18 +1193,55 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     Object.keys(ws).forEach(a => { if (a[0] !== "!" && typeof ws[a].v === "number" && !/^[A-Z]+1$/.test(a)) ws[a].z = "0.0"; });
     return ws;
   }
+  // readable copy of a second-section month: left cells in columns A–B, then days 1–31
+  function buildS2Sheet(XLSX, k, cfg, mo) {
+    const at = (key, i) => (Array.isArray(mo[key]) && mo[key][i]) || "";
+    const mt = cfg.macro || [];
+    const rows = [[mo.note || ""], [mt[0] || "", mt[2] || "", mt[1] || ""]];
+    for (let r = 2; r <= 12; r++) {
+      const i = r - 2;
+      const left = r >= 7 && r <= 11 ? [at("cw", i), ""] : [at("c1", i), at("c1b", i)];
+      const days = NUMBER_ROWS.includes(r) ? Array.from({ length: 31 }, (_, d) => d + 1) : Array.from({ length: 31 }, (_, d) => at("d" + r, d));
+      rows.push([...left, ...days]);
+    }
+    rows.push([at("c1", 11), at("cr", 11)]);
+    rows.push([at("cf", 12)]);
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws["!cols"] = [{ wch: 18 }, { wch: 18 }, ...Array.from({ length: 31 }, () => ({ wch: 5 }))];
+    return ws;
+  }
+  function buildWorkbook(XLSX, data) {
+    const wb = XLSX.utils.book_new();
+    wb.Props = { Title: "Registro Mensual" };
+    const used = new Set();
+    const add = (ws, name) => {
+      let n = name.slice(0, 31), i = 2;
+      while (used.has(n.toLowerCase())) n = (name.slice(0, 27) + " " + i++).slice(0, 31);
+      used.add(n.toLowerCase()); XLSX.utils.book_append_sheet(wb, ws, n);
+    };
+    for (const x of data.sections) {
+      for (const k of Object.keys(x.months).sort()) {
+        if (!monthCount(x.months[k])) continue;
+        if (x.type === "numeri") add(buildSheet(XLSX, k, x.config, x.months), label(k));
+        else add(buildS2Sheet(XLSX, k, x.config, x.months[k]), "S2 " + label(k));
+      }
+    }
+    // the full app state, read back by Importar: JSON split in cells under Excel's 32,767-character limit
+    const json = JSON.stringify(data), chunks = [];
+    for (let i = 0; i < json.length; i += 30000) chunks.push([json.slice(i, i + 30000)]);
+    add(XLSX.utils.aoa_to_sheet(chunks.length ? chunks : [[""]]), DATA_SHEET);
+    wb.Workbook = { Sheets: wb.SheetNames.map(n => ({ Hidden: n === DATA_SHEET ? 1 : 0 })) };
+    return wb;
+  }
   $("expGo").onclick = async () => {
-    const sel = expChecks().filter(c => c.checked).map(c => c.value).sort();
-    if (!sel.length) { toast("Elige al menos un mes para exportar."); return; }
     $("expGo").disabled = true; $("expGo").textContent = "Preparando el archivo…";
     try {
-      // no await when the library is ready: the phone's share sheet needs the tap to be recent
+      // no await when everything is ready: the phone's share sheet needs the tap to be recent
       const XLSX = window.XLSX || await loadXlsx();
-      const wb = XLSX.utils.book_new();
-      wb.Props = { Title: secTitle() === "Sección sin nombre" ? "" : secTitle() };
-      sel.forEach(k => XLSX.utils.book_append_sheet(wb, buildSheet(XLSX, k), label(k)));
-      const data = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-      const filename = (secTitle() === "Sección sin nombre" ? "Registro" : secTitle()) + " " + (sel.length > 1 ? label(sel[0]) + " - " + label(sel.at(-1)) : label(sel[0])) + ".xlsx";
+      const all = gathered && !db ? gathered : await gatherAll();
+      if (!db) { flush(); all.sections.forEach(x => { if (x.id === active) { x.config = JSON.parse(JSON.stringify(config)); x.months = JSON.parse(JSON.stringify(months)); } }); }
+      const data = XLSX.write(buildWorkbook(XLSX, all), { bookType: "xlsx", type: "array" });
+      const filename = "Registro Mensual " + new Date().toISOString().slice(0, 10) + ".xlsx";
       await saveFile(filename, data);
     } catch (e) {
       const code = e && e.code;
@@ -1127,7 +1249,7 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
       else if (e && e.message === "load") toast("No puedo cargar el módulo de Excel: revisa la conexión e inténtalo de nuevo.");
       else toast("La exportación no ha funcionado en este dispositivo.");
     } finally {
-      $("expGo").disabled = false; $("expGo").textContent = "Exportar a Excel";
+      $("expGo").disabled = false; $("expGo").textContent = "Exportar todo";
     }
   };
   async function saveFile(filename, data) {
