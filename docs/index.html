@@ -233,6 +233,7 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
 .pick { position: fixed; z-index: 70; display: flex; gap: 6px; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
 .pick button { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); font-size: 1.25rem; }
 .pick button.clear { font-size: .8rem; width: auto; padding: 0 10px; color: var(--muted); }
+.s2 .day.dnum { background: #fff1bf; color: #5d6b77; }
 .s2 .dnum { display: grid; place-items: center; color: var(--muted); font-weight: 500; }
 .s2 .macro-title { border-bottom: 1px solid var(--line); padding: 10px 12px; font-weight: 600; font-size: .92rem; text-align: center; }
 .s2 .macro-title.left { border-bottom: 0; border-right: 1px solid var(--line); }
@@ -753,11 +754,7 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
   };
   // rows whose cells are filled from a ✓ / ✗ choice instead of the keyboard
   const CHECK_ROWS = [8, 10, 11];
-  // temporary: each created cell gets its own colour to check the layout
-  const TINTS = ["#ffd6d6", "#ffe7c2", "#fff6b3", "#d9f5c5", "#c9f0e9", "#cfe6ff", "#dcd6ff", "#f3d4f7", "#ffd9ea", "#e6e0d4", "#d4ecd8", "#d7e3f4", "#f9e0c8", "#d0f0f7", "#ecd9c6", "#e2f7c9",
-    "#b8e0d2", "#f6c6a8", "#c7c4f2", "#f2e6a0", "#a9d6f5", "#f5b8c8", "#cde8a6", "#e8c4e8"];
   function buildS2Table() {
-    let tint = 0;
     let h = '<input id="macro1" data-t="1" class="macro-title stickv" style="grid-area:1/3/2/-1;width:calc(100cqw - var(--lw1) - var(--lw2));left:calc(var(--lw1) + var(--lw2))" aria-label="Título de la macrocolumna derecha">';
     const boxedAt = {};   // "col:row" -> the cell ending on that row has a bottom line
     for (const band of BANDS) {
@@ -774,7 +771,7 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
           const above = boxedAt[(band.split ? ci + 1 : 1) + ":" + (r - 1)] || (!band.split && boxedAt["1:" + (r - 1)] && boxedAt["2:" + (r - 1)]);
           const cls = "c1" + (g ? " boxed" : "") + (g && (r === 1 || above || c.atTop) ? " at-top" : "") + (c.col === "2/4" ? " to-end" : "") + (c.col === "1/4" ? " full" : "");
           if (g) { if (band.split) boxedAt[(ci + 1) + ":" + (r + span - 1)] = true; else { boxedAt["1:" + (r + span - 1)] = boxedAt["2:" + (r + span - 1)] = true; } }
-          const pos = `grid-row:${r}/span ${span};grid-column:${col}${extra}` + (g ? `;background:${TINTS[tint++ % TINTS.length]};color:#17222b` : "");
+          const pos = `grid-row:${r}/span ${span};grid-column:${col}${extra}` ;
           h += r === 1
             ? `<textarea id="macro${c.top}" data-t="${c.top}" class="${cls} ${stick} macro-title left" rows="1" style="${pos}" aria-label="Columna izquierda, arriba"></textarea>`
             : `<textarea id="${c.key}-${r - 2}" data-i="${r - 2}" data-k="${c.key}" class="${cls} ${stick}" rows="1" style="${pos}" aria-label="Columna izquierda, fila ${r - 1}"></textarea>`;
