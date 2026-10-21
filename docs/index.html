@@ -290,7 +290,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 .offlist input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); }
 .offlist input[type=date] { font: inherit; font-size: .82rem; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 7px; padding: 4px 6px; }
 .offlist input[type=date]:disabled { opacity: .4; }
-.s3 .day.dark { background: #8d99a3; color: transparent; pointer-events: none; }
+.s3 .day.dark { background: #8d99a3 !important; color: transparent !important; pointer-events: none; }
 .s3 .c1.dark { background: #8d99a3 !important; color: transparent !important; }
 .pick { position: fixed; z-index: 70; display: flex; gap: 6px; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
 .pick button { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); font-size: 1.25rem; }
@@ -1114,7 +1114,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
       h += `<textarea data-row="${row.id}" class="${cls} l2 freq" rows="1" readonly tabindex="-1" style="grid-column:2;grid-row:${r};background:${FREQ[row.color].tint};color:#17222b" aria-label="Frecuencia de la fila ${i + 1}">${FREQ[row.color].word}</textarea>`;
       h += `<textarea data-row="${row.id}" data-col="text" class="${cls} l3" rows="1" style="grid-column:3;grid-row:${r}" aria-label="Texto de la fila ${i + 1}"></textarea>`;
       for (let d = 1; d <= 31; d++)
-        h += `<input data-row="${row.id}" data-i="${d - 1}" size="1" readonly class="day pickable${d === 31 ? " last" : ""}" style="grid-row:${r};grid-column:${d + 3}" aria-label="${esc(rowTitle(row, i))}, día ${d}">`;
+        h += `<input data-row="${row.id}" data-i="${d - 1}" size="1" readonly class="day pickable${d === 31 ? " last" : ""}" style="grid-row:${r};grid-column:${d + 3};background:${FREQ[row.color].tint};color:#17222b" aria-label="${esc(rowTitle(row, i))}, día ${d}">`;
     });
     h += '<input id="s3Head" class="s3-head" style="grid-row:1;grid-column:4/-1" aria-label="Columna 4, fila 1">';
     for (let d = 1; d <= 31; d++) h += `<div class="day dnum${d === 31 ? " last" : ""}" style="grid-row:2;grid-column:${d + 3}">${d}</div>`;
