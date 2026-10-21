@@ -146,6 +146,20 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
 .mlist .cnt { margin-left: auto; color: var(--muted); font-size: .8rem; font-family: var(--f-num); }
 .mlist .empty { color: var(--muted); font-size: .9rem; }
 
+.menu button.danger { color: var(--danger); }
+.menu button.danger svg { stroke: var(--danger); }
+.go.red { background: var(--danger); color: var(--surface); }
+.opts { display: grid; gap: 8px; margin-bottom: 16px; }
+.opts > label { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+.opts > label:has(input[type=radio]:checked) { border-color: var(--danger); }
+.opts .head { display: flex; align-items: center; gap: 10px; font-weight: 500; }
+.opts input[type=radio] { width: 18px; height: 18px; accent-color: var(--danger); margin: 0; }
+.opts .inline { padding-left: 28px; font-size: .9rem; }
+.file { display: grid; place-items: center; gap: 4px; padding: 22px 12px; border: 2px dashed var(--line); border-radius: 12px; text-align: center; cursor: pointer; margin-bottom: 14px; color: var(--muted); }
+.file b { color: var(--accent); }
+.file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.file:focus-within { border-color: var(--accent); }
+
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 60; background: var(--ink); color: var(--bg); padding: 11px 16px; border-radius: 10px; font-size: .9rem; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
 </style>
 
@@ -163,6 +177,8 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
     <div class="menu" id="menu" hidden>
       <button id="openSettings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Impostazioni</button>
       <button id="openExport"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 17v3h16v-3"/></svg>Esporta</button>
+      <button id="openImport"><svg viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M4 17v3h16v-3"/></svg>Importa</button>
+      <button id="openDelete" class="danger"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>Elimina</button>
       <button id="goToday"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Vai al mese corrente</button>
     </div>
   </div>
@@ -215,6 +231,37 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
     <div class="summary" id="summary"></div>
     <button class="go" id="goBtn">Vai pure</button>
     <div class="row-x"><button class="link" id="setClose">Chiudi</button></div>
+  </div>
+</div>
+
+<!-- Import -->
+<div class="scrim" id="impScrim" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="impTitle">
+    <h2 id="impTitle">Importa</h2>
+    <p class="sub">Carica un file Excel (anche scaricato da Google Fogli). Ogni foglio chiamato come un mese, per esempio "Maggio 2026", va nel mese corrispondente.</p>
+    <label class="file" id="impDrop"><input type="file" id="impFile" accept=".xlsx,.xls,.ods,.csv"><b>Scegli il file</b><span id="impFileName">.xlsx, .xls, .ods o .csv</span></label>
+    <div class="mlist" id="impList" hidden></div>
+    <p class="sub" id="impNote" hidden>I mesi importati sostituiscono i valori già presenti in quei mesi. Le voci vengono abbinate per nome; quelle nuove si aggiungono in fondo.</p>
+    <button class="go" id="impGo" disabled>Importa</button>
+    <div class="row-x"><button class="link" id="impClose">Chiudi</button></div>
+  </div>
+</div>
+
+<!-- Delete -->
+<div class="scrim" id="delScrim" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="delTitle">
+    <h2 id="delTitle">Elimina</h2>
+    <p class="sub">Cancella i valori inseriti. Non si può annullare: esporta prima un file se vuoi tenerne una copia.</p>
+    <div class="opts">
+      <label><span class="head"><input type="radio" name="delMode" value="month" checked> Solo <span id="delCur"></span></span></label>
+      <label><span class="head"><input type="radio" name="delMode" value="range"> Da un mese a un altro</span>
+        <span class="inline">da <select id="delFrom"></select> a <select id="delTo"></select></span></label>
+      <label><span class="head"><input type="radio" name="delMode" value="all"> Elimina tutto</span>
+        <span class="inline"><input type="checkbox" id="delNames" style="width:18px;height:18px;accent-color:var(--danger)"> Cancella anche i nomi delle voci</span></label>
+    </div>
+    <div class="summary" id="delSummary"></div>
+    <button class="go red" id="delGo">Elimina</button>
+    <div class="row-x"><button class="link" id="delClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -296,6 +343,14 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
         else if (err && err.code === "quota_exceeded") toast("Spazio di salvataggio esaurito.");
         else toast("Salvataggio non riuscito, riprova.");
       });
+    return chains[path];
+  }
+  function deleteDoc(path) {
+    saveLocal();
+    if (!db) return Promise.resolve();
+    chains[path] = (chains[path] || Promise.resolve())
+      .then(() => db.doc(path).delete())
+      .catch(() => toast("Eliminazione non riuscita, riprova."));
     return chains[path];
   }
   const timers = {};
@@ -407,19 +462,22 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
   $("dotsBtn").onclick = e => { e.stopPropagation(); setMenu(menu.hidden); };
   document.addEventListener("click", e => { if (!menu.hidden && !menu.contains(e.target)) setMenu(false); });
   $("goToday").onclick = () => { setMenu(false); viewKey = curKey; render(); };
-  $("openSettings").onclick = () => { setMenu(false); openPin(); };
+  $("openSettings").onclick = () => { setMenu(false); openPin(openSettings); };
+  $("openDelete").onclick = () => { setMenu(false); openPin(openDelete); };
+  $("openImport").onclick = () => { setMenu(false); openImport(); };
 
   // ---- PIN ----
   let pin = "";
   function drawPin() { [...$("pinDots").children].forEach((s, i) => s.classList.toggle("on", i < pin.length)); }
-  function openPin() { pin = ""; $("pinErr").textContent = ""; drawPin(); $("pinScrim").hidden = false; }
+  let pinNext = null;
+  function openPin(next) { pinNext = next; pin = ""; $("pinErr").textContent = ""; drawPin(); $("pinScrim").hidden = false; }
   function closePin() { $("pinScrim").hidden = true; }
   function pressKey(k) {
     if (k === "del") { pin = pin.slice(0, -1); drawPin(); return; }
     if (pin.length >= 4) return;
     pin += k; drawPin(); $("pinErr").textContent = "";
     if (pin.length === 4) {
-      if (pin === PIN) { setTimeout(() => { closePin(); openSettings(); }, 120); }
+      if (pin === PIN) { setTimeout(() => { closePin(); pinNext && pinNext(); }, 120); }
       else {
         const p = $("pinScrim").querySelector(".panel");
         p.classList.remove("shake"); void p.offsetWidth; p.classList.add("shake");
@@ -511,17 +569,166 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
     toast(count ? `Fatto: ${count} valori inseriti (${list.length} ${list.length === 1 ? "foglio" : "fogli"}).` : "Nessuna casella vuota da riempire.");
   };
 
+  // months worth offering in pickers: from the earliest with data (or start month) to the latest
+  function monthSpan() {
+    const keys = Object.keys(months).filter(filled).sort();
+    const first = [config.startMonth, keys[0] || curKey].sort()[0];
+    const lastK = [curKey, keys.at(-1) || curKey].sort().at(-1);
+    const list = [];
+    for (let k = first; k <= lastK; k = shift(k, 1)) list.push(k);
+    return list;
+  }
+
+  // ---- delete ----
+  function delTargets() {
+    const mode = document.querySelector('input[name="delMode"]:checked').value;
+    if (mode === "month") return [viewKey];
+    if (mode === "all") return Object.keys(months);
+    const [a, b] = [$("delFrom").value, $("delTo").value].sort();
+    return Object.keys(months).filter(k => k >= a && k <= b);
+  }
+  function delSummary() {
+    const mode = document.querySelector('input[name="delMode"]:checked').value;
+    const t = delTargets();
+    const n = t.reduce((s, k) => s + filled(k), 0);
+    const sheets = t.filter(filled).length;
+    let txt = n ? `Verranno cancellati <b>${n} valori</b> in <b>${sheets} ${sheets === 1 ? "foglio" : "fogli"}</b>.` : "Non ci sono valori da cancellare qui.";
+    if (mode === "all" && $("delNames").checked) txt += " Anche i nomi delle voci verranno cancellati.";
+    $("delSummary").innerHTML = txt;
+    $("delGo").disabled = !n && !(mode === "all" && $("delNames").checked);
+    disarmDel();
+  }
+  function disarmDel() { $("delGo").dataset.armed = ""; $("delGo").textContent = "Elimina"; }
+  function openDelete() {
+    const span = monthSpan();
+    const opts = span.map(k => `<option value="${k}">${label(k)}</option>`).join("");
+    $("delFrom").innerHTML = opts; $("delTo").innerHTML = opts;
+    $("delFrom").value = span[0]; $("delTo").value = viewKey <= span.at(-1) && viewKey >= span[0] ? viewKey : span.at(-1);
+    $("delCur").textContent = label(viewKey);
+    document.querySelector('input[name="delMode"][value="month"]').checked = true;
+    $("delNames").checked = false;
+    delSummary();
+    $("delScrim").hidden = false;
+  }
+  $("delScrim").addEventListener("input", e => {
+    if (e.target.matches("#delFrom, #delTo")) document.querySelector('input[name="delMode"][value="range"]').checked = true;
+    if (e.target.id === "delNames") document.querySelector('input[name="delMode"][value="all"]').checked = true;
+    delSummary();
+  });
+  $("delClose").onclick = () => { $("delScrim").hidden = true; };
+  $("delGo").onclick = () => {
+    if ($("delGo").dataset.armed !== "1") {
+      $("delGo").dataset.armed = "1"; $("delGo").textContent = "Tocca di nuovo per confermare";
+      return;
+    }
+    const mode = document.querySelector('input[name="delMode"]:checked').value;
+    const t = delTargets();
+    t.forEach(k => { clearTimeout(timers["m" + k]); delete timers["m" + k]; delete months[k]; deleteDoc("mesi/" + k); });
+    if (mode === "all" && $("delNames").checked) {
+      config.rows = config.rows.map(() => ({ id: uid(), name: "" }));
+      writeDoc("registro/config", config);
+    }
+    saveLocal();
+    $("delScrim").hidden = true; render();
+    toast(mode === "month" ? `${label(viewKey)} svuotato.` : mode === "all" ? "Tutto eliminato." : "Mesi eliminati.");
+  };
+
+  // ---- import ----
+  let parsed = [];
+  function openImport() {
+    parsed = []; $("impFile").value = ""; $("impFileName").textContent = ".xlsx, .xls, .ods o .csv";
+    $("impList").hidden = true; $("impNote").hidden = true; $("impGo").disabled = true;
+    $("impScrim").hidden = false;
+  }
+  function sheetMonth(name) {
+    const t = name.toLowerCase().trim();
+    let m = t.match(/([a-zà]{3,})\.?\s*[-_/ ]?\s*'?(\d{4}|\d{2})\b/);
+    if (m) {
+      const i = MESI.findIndex(x => x.toLowerCase().startsWith(m[1].slice(0, 3)));
+      const y = m[2].length === 2 ? 2000 + +m[2] : +m[2];
+      if (i >= 0) return mk(y, i);
+    }
+    m = t.match(/\b(\d{4})[-/._ ](\d{1,2})\b/); if (m && +m[2] >= 1 && +m[2] <= 12) return mk(+m[1], +m[2] - 1);
+    m = t.match(/\b(\d{1,2})[-/._ ](\d{4})\b/); if (m && +m[1] >= 1 && +m[1] <= 12) return mk(+m[2], +m[1] - 1);
+    return null;
+  }
+  function readSheet(XLSX, ws) {
+    const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null, blankrows: false });
+    const dayOf = v => { const n = typeof v === "number" ? v : Number(String(v ?? "").trim()); return Number.isInteger(n) && n >= 1 && n <= 31 ? n : null; };
+    let hi = aoa.findIndex(r => r.filter(v => dayOf(v)).length >= 3);
+    if (hi < 0) return null;
+    const head = aoa[hi];
+    const dayCols = {}; head.forEach((v, c) => { const d = dayOf(v); if (d && !Object.values(dayCols).includes(d)) dayCols[c] = d; });
+    const firstDay = Math.min(...Object.keys(dayCols).map(Number));
+    const nameCol = firstDay > 0 ? firstDay - 1 : 0;
+    const rows = [];
+    for (const r of aoa.slice(hi + 1)) {
+      const name = String(r[nameCol] ?? "").replace(/\s+/g, " ").trim();
+      const vals = {};
+      for (const c in dayCols) { const v = typeof r[c] === "number" ? Math.round(r[c] * 10) / 10 : num(r[c] ?? ""); if (typeof v === "number") vals[dayCols[c]] = v; }
+      if (name || Object.keys(vals).length) rows.push({ name, vals });
+    }
+    return rows;
+  }
+  $("impFile").addEventListener("change", async () => {
+    const f = $("impFile").files[0]; if (!f) return;
+    $("impFileName").textContent = f.name;
+    try {
+      const XLSX = await loadXlsx();
+      const wb = XLSX.read(await f.arrayBuffer(), { type: "array" });
+      parsed = wb.SheetNames.map(n => ({ sheet: n, key: sheetMonth(n), rows: readSheet(XLSX, wb.Sheets[n]) })).filter(p => p.rows && p.rows.length);
+      if (!parsed.length) { $("impList").hidden = false; $("impList").innerHTML = '<p class="empty">Nel file non ho trovato una riga con i giorni 1, 2, 3… e i nomi nella colonna a sinistra.</p>'; $("impGo").disabled = true; return; }
+      const span = monthSpan(); for (let k = shift(span[0], -24); k < span[0]; k = shift(k, 1)) span.unshift(k);
+      const choices = [...new Set([...span, ...parsed.map(p => p.key).filter(Boolean)])].sort().reverse();
+      $("impList").innerHTML = parsed.map((p, i) => {
+        const n = p.rows.reduce((s, r) => s + Object.keys(r.vals).length, 0);
+        const sel = `<select data-i="${i}">${choices.map(k => `<option value="${k}"${k === (p.key || viewKey) ? " selected" : ""}>${label(k)}</option>`).join("")}</select>`;
+        return `<label><input type="checkbox" data-i="${i}" checked><span>${p.key ? "" : `<small style="color:var(--muted)">“${p.sheet}” →</small> `}${sel}</span><span class="cnt">${p.rows.length} voci · ${n} valori</span></label>`;
+      }).join("");
+      $("impList").hidden = false; $("impNote").hidden = false; $("impGo").disabled = false;
+    } catch (e) {
+      toast(e && e.message === "load" ? "Non riesco a caricare il modulo Excel: controlla la connessione e riprova." : "Non riesco a leggere questo file.");
+    }
+  });
+  $("impClose").onclick = () => { $("impScrim").hidden = true; };
+  $("impGo").onclick = () => {
+    const picks = [...$("impList").querySelectorAll('input[type=checkbox]')].filter(c => c.checked)
+      .map(c => ({ p: parsed[+c.dataset.i], key: $("impList").querySelector(`select[data-i="${c.dataset.i}"]`).value }));
+    if (!picks.length) { toast("Scegli almeno un foglio da importare."); return; }
+    const rowFor = name => {
+      const low = name.toLowerCase();
+      let r = config.rows.find(x => x.name.trim().toLowerCase() === low);
+      if (r) return r;
+      r = config.rows.find(x => !x.name.trim() && !Object.values(months).some(m => m.cells && m.cells[x.id] && Object.keys(m.cells[x.id]).length));
+      if (r) { r.name = name; return r; }
+      r = { id: uid(), name }; config.rows.push(r); return r;
+    };
+    let count = 0;
+    for (const { p, key } of picks) {
+      const cells = {};
+      const n = daysIn(key);
+      p.rows.forEach((row, i) => {
+        const r = rowFor(row.name || "Voce " + (i + 1));
+        const v = cells[r.id] = {};
+        for (const d in row.vals) if (+d <= n) { v[d] = row.vals[d]; count++; }
+      });
+      clearTimeout(timers["m" + key]); delete timers["m" + key];
+      months[key] = { cells };
+      writeDoc("mesi/" + key, months[key]);
+    }
+    writeDoc("registro/config", config);
+    viewKey = picks[0].key;
+    $("impScrim").hidden = true; render();
+    toast(`Importati ${count} valori in ${picks.length} ${picks.length === 1 ? "foglio" : "fogli"}.`);
+  };
+
   // ---- export ----
   function filled(k) {
     const c = (months[k] && months[k].cells) || {};
     return Object.values(c).reduce((n, row) => n + Object.keys(row).length, 0);
   }
   function openExport() {
-    const keys = Object.keys(months).filter(filled).sort();
-    let first = [config.startMonth, keys[0] || curKey].sort()[0];
-    const lastK = [curKey, keys.at(-1) || curKey].sort().at(-1);
-    const list = [];
-    for (let k = first; k <= lastK; k = shift(k, 1)) list.push(k);
+    const list = monthSpan();
     $("expList").innerHTML = list.reverse().map(k => {
       const n = filled(k);
       return `<label><input type="checkbox" value="${k}"${n ? " checked" : ""}>${label(k)}<span class="cnt">${n ? n + " valori" : "vuoto"}</span></label>`;
