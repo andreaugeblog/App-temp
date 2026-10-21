@@ -212,7 +212,7 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
 .s2-table > * { border: 0; border-radius: 0; background: var(--surface); color: var(--ink); font: inherit; min-width: 0; width: 100%; margin: 0; }
 .s2-table > *:focus { outline: 2px solid var(--accent); outline-offset: -2px; position: relative; z-index: 1; }
 .s2 .macro-title { border-bottom: 1px solid var(--line); padding: 10px 12px; font-weight: 600; font-size: .92rem; text-align: center; }
-.s2 .macro-title.t0 { border-right: 1px solid var(--line); }
+.s2 .macro-title.left { border-bottom: 0; border-right: 1px solid var(--line); }
 .s2 .c1 { border-right: 1px solid var(--line); resize: none; padding: 9px 10px; line-height: 1.35; overflow: hidden; display: block; height: 100%; }
 .s2 .c1.boxed { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .s2 .r12 { border-bottom: 1px solid var(--line); padding: 9px 10px; }
@@ -639,7 +639,7 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     if (document.activeElement !== t) { t.value = (months[viewKey] && months[viewKey].note) || ""; }
     grow(t);
     const mt = config.macro || [];
-    [0, 1].forEach(i => { const el = $("macro" + i); if (document.activeElement !== el) el.value = mt[i] || ""; });
+    [0, 1, 2].forEach(i => { const el = $("macro" + i); if (document.activeElement !== el) el.value = mt[i] || ""; });
     const mo = months[viewKey] || {};
     const arr = k => Array.isArray(mo[k]) ? mo[k] : [];
     for (const k of ["c1", "c1b", "r12"]) {
@@ -651,8 +651,10 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
   // Single rows have no lines between them; a group spanning more rows gets its own outline.
   const LEFT = [{ key: "c1", col: 1, groups: [] }, { key: "c1b", col: 2, groups: [] }];
   function buildS2Table() {
-    let h = '<input id="macro0" class="macro-title t0" style="grid-area:1/1/2/3" aria-label="Titolo macro colonna sinistra">'
-          + '<input id="macro1" class="macro-title" style="grid-area:1/3" aria-label="Titolo macro colonna destra">';
+    // the left macro column has no horizontal lines: its top cells continue the two sub-columns
+    let h = '<input id="macro0" data-t="0" class="macro-title left" style="grid-area:1/1" aria-label="Colonna 1, in alto">'
+          + '<input id="macro2" data-t="2" class="macro-title left" style="grid-area:1/2" aria-label="Colonna 2, in alto">'
+          + '<input id="macro1" data-t="1" class="macro-title" style="grid-area:1/3" aria-label="Titolo macro colonna destra">';
     for (const c of LEFT) {
       for (let i = 0; i < 12; ) {
         const g = c.groups.find(x => x[0] === i);
@@ -668,8 +670,8 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
   $("s2Table").addEventListener("input", e => {
     const t = e.target, i = +t.dataset.i;
     if (t.classList.contains("macro-title")) {
-      const k = t.id === "macro0" ? 0 : 1;
-      config.macro = (config.macro || ["", ""]).slice(); config.macro[k] = t.value; saveConfig();
+      const k = +t.dataset.t;
+      config.macro = (config.macro || ["", "", ""]).slice(); config.macro[k] = t.value; saveConfig();
       return;
     }
     const m = months[viewKey] || (months[viewKey] = {});
