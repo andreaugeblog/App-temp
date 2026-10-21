@@ -266,6 +266,7 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
     <p class="sub">Carica un file Excel (anche scaricato da Google Fogli). Ogni foglio chiamato come un mese, per esempio "Maggio 2026", va nel mese corrispondente.</p>
     <label class="file" id="impDrop"><input type="file" id="impFile" accept=".xlsx,.xls,.ods,.csv"><b>Scegli il file</b><span id="impFileName">.xlsx, .xls, .ods o .csv</span></label>
     <div class="mlist" id="impList" hidden></div>
+    <label class="field" id="impSecWrap" hidden><span>Importa nella sezione</span><select id="impSec"></select></label>
     <p class="sub" id="impNote" hidden>I mesi importati sostituiscono i valori già presenti in quei mesi. Le voci vengono abbinate per nome; quelle nuove si aggiungono in fondo.</p>
     <button class="go" id="impGo" disabled>Importa</button>
     <div class="row-x"><button class="link" id="impClose">Chiudi</button></div>
@@ -765,10 +766,11 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
   };
 
   // ---- import ----
-  let parsed = [];
+  let parsed = [], fileTitle = "";
   function openImport() {
     parsed = []; $("impFile").value = ""; $("impFileName").textContent = ".xlsx, .xls, .ods o .csv";
-    $("impList").hidden = true; $("impNote").hidden = true; $("impGo").disabled = true;
+    $("impList").hidden = true; $("impNote").hidden = true; $("impSecWrap").hidden = true; $("impGo").disabled = true;
+    loadXlsx().catch(() => {});
     $("impScrim").hidden = false;
   }
   function sheetMonth(name) {
@@ -807,6 +809,7 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
     try {
       const XLSX = await loadXlsx();
       const wb = XLSX.read(await f.arrayBuffer(), { type: "array" });
+      fileTitle = String((wb.Props && wb.Props.Title) || "").trim();
       parsed = wb.SheetNames.map(n => ({ sheet: n, key: sheetMonth(n), rows: readSheet(XLSX, wb.Sheets[n]) })).filter(p => p.rows && p.rows.length);
       if (!parsed.length) { $("impList").hidden = false; $("impList").innerHTML = '<p class="empty">Nel file non ho trovato una riga con i giorni 1, 2, 3… e i nomi nella colonna a sinistra.</p>'; $("impGo").disabled = true; return; }
       const span = monthSpan(); for (let k = shift(span[0], -24); k < span[0]; k = shift(k, 1)) span.unshift(k);
@@ -816,6 +819,14 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
         const sel = `<select data-i="${i}">${choices.map(k => `<option value="${k}"${k === (p.key || viewKey) ? " selected" : ""}>${label(k)}</option>`).join("")}</select>`;
         return `<label><input type="checkbox" data-i="${i}" checked><span>${p.key ? "" : `<small style="color:var(--muted)">“${p.sheet}” →</small> `}${sel}</span><span class="cnt">${p.rows.length} voci · ${n} valori</span></label>`;
       }).join("");
+      // which section receives the file: same name, else this one if still empty, else a new one
+      const low = fileTitle.toLowerCase();
+      const same = low && sections.find(x => (x.name || "").trim().toLowerCase() === low);
+      const empty = !Object.keys(months).some(filled) && !namedRows().length;
+      $("impSec").innerHTML = sections.map(x => `<option value="${x.id}">${esc((x.name || "").trim() || "Sezione senza nome")}</option>`).join("")
+        + `<option value="new">+ Nuova sezione${fileTitle ? ": " + esc(fileTitle) : ""}</option>`;
+      $("impSec").value = same ? same.id : empty ? active : "new";
+      $("impSecWrap").hidden = false;
       $("impList").hidden = false; $("impNote").hidden = false; $("impGo").disabled = false;
     } catch (e) {
       toast(e && e.message === "load" ? "Non riesco a caricare il modulo Excel: controlla la connessione e riprova." : "Non riesco a leggere questo file.");
@@ -826,6 +837,14 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
     const picks = [...$("impList").querySelectorAll('input[type=checkbox]')].filter(c => c.checked)
       .map(c => ({ p: parsed[+c.dataset.i], key: $("impList").querySelector(`select[data-i="${c.dataset.i}"]`).value }));
     if (!picks.length) { toast("Scegli almeno un foglio da importare."); return; }
+    const target = $("impSec").value;
+    if (target === "new") {
+      const id = "s" + uid();
+      sections.push({ id, name: fileTitle, type: "numeri" });
+      writeDoc("registro/sezioni", { list: sections });
+      switchSection(id);
+    } else if (target !== active) switchSection(target);
+    if (!(sec().name || "").trim() && fileTitle) { sec().name = fileTitle; saveIndex(); renderSections(); }
     const rowFor = name => {
       const low = name.toLowerCase();
       let r = config.rows.find(x => x.name.trim().toLowerCase() === low);
@@ -866,6 +885,7 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
       return `<label><input type="checkbox" value="${k}"${n ? " checked" : ""}>${label(k)}<span class="cnt">${n ? n + " valori" : "vuoto"}</span></label>`;
     }).join("");
     $("expScrim").hidden = false;
+    loadXlsx().catch(() => {});
   }
   const expChecks = () => [...$("expList").querySelectorAll("input")];
   $("openExport").onclick = () => { setMenu(false); openExport(); };
@@ -877,7 +897,7 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
   function loadXlsx() {
     return xlsxLib || (xlsxLib = new Promise((res, rej) => {
       const s = document.createElement("script");
-      s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+      s.src = window.XLSX_SRC || "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
       s.onload = () => res(window.XLSX);
       s.onerror = () => { xlsxLib = null; rej(new Error("load")); };
       document.head.appendChild(s);
@@ -908,8 +928,10 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
     if (!sel.length) { toast("Scegli almeno un mese da esportare."); return; }
     $("expGo").disabled = true; $("expGo").textContent = "Preparo il file…";
     try {
-      const XLSX = await loadXlsx();
+      // no await when the library is ready: the phone's share sheet needs the tap to be recent
+      const XLSX = window.XLSX || await loadXlsx();
       const wb = XLSX.utils.book_new();
+      wb.Props = { Title: secTitle() === "Sezione senza nome" ? "" : secTitle() };
       sel.forEach(k => XLSX.utils.book_append_sheet(wb, buildSheet(XLSX, k), label(k)));
       const data = XLSX.write(wb, { bookType: "xlsx", type: "array" });
       const filename = (secTitle() === "Sezione senza nome" ? "Registro" : secTitle()) + " " + (sel.length > 1 ? label(sel[0]) + " - " + label(sel.at(-1)) : label(sel[0])) + ".xlsx";
@@ -930,7 +952,18 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
       $("expScrim").hidden = true; toast("File esportato.");
       return;
     }
-    // outside claude.ai: plain browser download
+    // outside claude.ai: the phone's share sheet (WhatsApp, email, Files…), else a download
+    const type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    const file = typeof File === "function" ? new File([data], filename, { type }) : null;
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: filename });
+        $("expScrim").hidden = true; toast("File pronto da inviare.");
+        return;
+      } catch (e) {
+        if (e && e.name === "AbortError") { toast("Esportazione annullata."); return; }
+      }
+    }
     const url = URL.createObjectURL(new Blob([data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
     const a = Object.assign(document.createElement("a"), { href: url, download: filename });
     document.body.appendChild(a); a.click(); a.remove();
@@ -1008,7 +1041,11 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
   const ready = claudeApi && claudeApi.use ? claudeApi.use("db") : Promise.resolve(null);
   ready.then(d => {
     db = d;
-    if (!db) { $("status").textContent = "Salvato solo su questo dispositivo."; return; }
+    if (!db) {
+      $("status").textContent = "Dati salvati su questo dispositivo. Per passarli a qualcuno usa Esporta, e lui Importa.";
+      if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+      return;
+    }
     $("status").textContent = "Salvataggio automatico attivo.";
     db.doc("registro/sezioni").onSnapshot(s => {
       if (s.metadata.hasPendingWrites || timers.idx || !s.exists) return;

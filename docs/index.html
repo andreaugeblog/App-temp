@@ -1,0 +1,1092 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Registro Mensile</title>
+<meta name="description" content="Registro mensile con voci, giorni 1-31, generazione valori ed esportazione Excel.">
+<meta name="theme-color" content="#eef2f5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e1418" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Registro">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<style>
+:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<script>window.XLSX_SRC = "xlsx.full.min.js";</script>
+</head>
+<body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a month sheet — names down a sticky left column, days 1–31 across; one control bar on top. */
+:root {
+  --bg: #eef2f5;
+  --surface: #ffffff;
+  --ink: #17222b;
+  --muted: #5d6b77;
+  --line: #d5dde3;
+  --accent: #1f6f9f;
+  --accent-ink: #ffffff;
+  --today: #e3eff7;
+  --cold: #2a5d88;
+  --warm: #2c7a57;
+  --off: #e6eaed;
+  --danger: #b4372c;
+  --shadow: 0 10px 30px rgba(20, 40, 60, .16);
+  --f-ui: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1418; --surface: #151d23; --ink: #e2e9ee; --muted: #8b9aa6; --line: #27333c;
+    --accent: #5aaedf; --accent-ink: #08131a; --today: #18303f; --cold: #8cc3ea; --warm: #7fcfa5;
+    --off: #11181d; --danger: #f07a6e; --shadow: 0 10px 30px rgba(0, 0, 0, .5);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1418; --surface: #151d23; --ink: #e2e9ee; --muted: #8b9aa6; --line: #27333c;
+  --accent: #5aaedf; --accent-ink: #08131a; --today: #18303f; --cold: #8cc3ea; --warm: #7fcfa5;
+  --off: #11181d; --danger: #f07a6e; --shadow: 0 10px 30px rgba(0, 0, 0, .5);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--f-ui); font-size: 15px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 14px 40px;
+}
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, select:focus-visible, [contenteditable]:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 1px;
+}
+
+/* Top bar */
+.bar { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.bar h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: .02em; margin: 0; flex: 1; min-width: 0; text-wrap: balance; }
+.bar h1 small { display: block; font-weight: 500; font-size: .78rem; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.month { display: flex; align-items: center; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 2px; }
+.month b { min-width: 9.5em; text-align: center; font-weight: 600; font-size: .95rem; }
+.icon-btn { background: none; border: 0; width: 38px; height: 38px; border-radius: 8px; display: grid; place-items: center; font-size: 1.15rem; color: var(--muted); }
+.icon-btn:hover { background: var(--bg); color: var(--ink); }
+.menu-wrap { position: relative; }
+.dots { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); display: grid; place-items: center; }
+.dots svg { width: 18px; height: 18px; fill: var(--ink); }
+.menu { position: absolute; right: 0; top: 46px; z-index: 30; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); min-width: 190px; padding: 6px; }
+.menu button { display: flex; width: 100%; align-items: center; gap: 10px; text-align: left; background: none; border: 0; padding: 10px 12px; border-radius: 7px; }
+.menu button:hover { background: var(--bg); }
+.menu svg { width: 17px; height: 17px; fill: none; stroke: var(--muted); stroke-width: 1.8; }
+
+.secs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; margin-bottom: 12px; scrollbar-width: none; }
+.secs::-webkit-scrollbar { display: none; }
+.chip { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 14px; font-weight: 500; font-size: .88rem; color: var(--muted); max-width: 16em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip[aria-current="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.chip.add { border-style: dashed; color: var(--accent); }
+.sechead { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.secname { flex: 1 1 14em; min-width: 0; font: 700 1.35rem/1.2 var(--f-ui); color: var(--ink); background: transparent; border: 0; border-bottom: 2px solid transparent; padding: 4px 0; border-radius: 0; }
+.secname::placeholder { color: var(--muted); opacity: .55; }
+.secname:hover { border-bottom-color: var(--line); }
+.secname:focus { outline: none; border-bottom-color: var(--accent); }
+@media (max-width: 560px) {
+  .month { flex: 1; justify-content: space-between; }
+}
+
+/* Sheet */
+.sheet { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table { border-collapse: separate; border-spacing: 0; font-variant-numeric: tabular-nums; }
+th, td { border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); padding: 0; }
+tr:last-child > * { border-bottom: 0; }
+thead th { font-family: var(--f-num); font-weight: 500; font-size: .78rem; color: var(--muted); height: 34px; background: var(--surface); }
+thead th.day { min-width: 3.9em; }
+thead th.corner { text-align: left; padding: 0 12px; font-family: var(--f-ui); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; }
+.sticky { position: sticky; left: 0; z-index: 2; background: var(--surface); border-right: 2px solid var(--line); }
+th.name { text-align: left; font-weight: 500; vertical-align: middle; }
+.name-in {
+  width: max-content; max-width: 11.5em; min-width: max(min-content, 6.5em);
+  padding: 9px 12px; line-height: 1.25; overflow-wrap: normal; word-break: normal; hyphens: none;
+  outline: none; border-radius: 4px;
+}
+.name-in:empty::before { content: attr(data-ph); color: var(--muted); opacity: .6; }
+.name-in:focus { background: var(--today); }
+td.cell input {
+  width: 4.3em; border: 0; background: transparent; text-align: center; padding: 10px 2px;
+  font-family: var(--f-num); font-size: .84rem; color: var(--cold); border-radius: 0;
+}
+tr.b td.cell input { color: var(--warm); }
+td.cell input:focus { background: var(--today); outline: 2px solid var(--accent); outline-offset: -2px; }
+td.off { background: repeating-linear-gradient(135deg, var(--off) 0 4px, transparent 4px 8px); }
+td.off input { visibility: hidden; }
+.is-today { background: var(--today); }
+thead th.is-today { color: var(--accent); font-weight: 600; }
+tr.b th.name .name-in::after { content: "fascia 2"; display: block; font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; color: var(--warm); margin-top: 2px; }
+tr.b th.name .name-in:empty::after { display: none; }
+
+.under { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+.ghost { background: var(--surface); border: 1px solid var(--line); border-radius: 9px; padding: 8px 14px; font-weight: 500; }
+.ghost:hover { border-color: var(--accent); color: var(--accent); }
+.legend { margin-left: auto; color: var(--muted); font-size: .8rem; display: flex; gap: 14px; flex-wrap: wrap; }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
+.status { color: var(--muted); font-size: .78rem; margin-top: 10px; }
+
+/* Overlays */
+.scrim { position: fixed; inset: 0; z-index: 50; background: rgba(8, 16, 22, .45); display: grid; place-items: center; padding: 16px; }
+.panel { background: var(--surface); border-radius: 16px; box-shadow: var(--shadow); width: min(420px, 100%); padding: 22px; max-height: calc(100% - 20px); overflow-y: auto; }
+.panel h2 { margin: 0 0 4px; font-size: 1.15rem; text-wrap: balance; }
+.panel p.sub { margin: 0 0 18px; color: var(--muted); font-size: .9rem; }
+.pin-dots { display: flex; justify-content: center; gap: 14px; margin: 8px 0 6px; }
+.pin-dots span { width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--muted); }
+.pin-dots span.on { background: var(--ink); border-color: var(--ink); }
+.pin-err { text-align: center; color: var(--danger); font-size: .85rem; min-height: 1.3em; margin-bottom: 8px; }
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.keypad button { height: 56px; border-radius: 12px; border: 1px solid var(--line); background: var(--bg); font-family: var(--f-num); font-size: 1.3rem; }
+.keypad button:active { background: var(--today); }
+.keypad .blank { visibility: hidden; }
+.shake { animation: shake .35s; }
+@keyframes shake { 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+@media (prefers-reduced-motion: reduce) { .shake { animation: none; } }
+.row-x { display: flex; justify-content: flex-end; margin-top: 14px; }
+.link { background: none; border: 0; color: var(--muted); padding: 8px 4px; }
+
+.field { display: grid; gap: 6px; margin-bottom: 16px; }
+.field > span { font-size: .74rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.inline { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.num { width: 6em; font-family: var(--f-num); text-align: center; }
+.check { display: flex; gap: 10px; align-items: center; font-size: .92rem; margin-bottom: 16px; }
+.check input { width: 18px; height: 18px; accent-color: var(--accent); }
+.summary { background: var(--bg); border-radius: 10px; padding: 12px 14px; font-size: .9rem; color: var(--muted); margin-bottom: 16px; line-height: 1.45; }
+.summary b { color: var(--ink); font-weight: 600; }
+.go { width: 100%; height: 54px; border: 0; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font-size: 1.1rem; font-weight: 700; letter-spacing: .02em; }
+.go:disabled { opacity: .45; cursor: not-allowed; }
+
+.mlist { display: grid; gap: 6px; max-height: 46vh; overflow-y: auto; margin-bottom: 16px; }
+.mlist label { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+.mlist label:has(input:checked) { border-color: var(--accent); }
+.mlist input { width: 18px; height: 18px; accent-color: var(--accent); }
+.mlist .cnt { margin-left: auto; color: var(--muted); font-size: .8rem; font-family: var(--f-num); }
+.mlist .empty { color: var(--muted); font-size: .9rem; }
+
+.menu button.danger { color: var(--danger); }
+.menu button.danger svg { stroke: var(--danger); }
+.go.red { background: var(--danger); color: var(--surface); }
+.opts { display: grid; gap: 8px; margin-bottom: 16px; }
+.opts > label { display: grid; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+.opts > label:has(input[type=radio]:checked) { border-color: var(--danger); }
+.opts .head { display: flex; align-items: center; gap: 10px; font-weight: 500; }
+.opts input[type=radio] { width: 18px; height: 18px; accent-color: var(--danger); margin: 0; }
+.opts .inline { padding-left: 28px; font-size: .9rem; }
+.opts.blue > label:has(input[type=radio]:checked) { border-color: var(--accent); }
+.opts.blue input[type=radio] { accent-color: var(--accent); }
+.file { display: grid; place-items: center; gap: 4px; padding: 22px 12px; border: 2px dashed var(--line); border-radius: 12px; text-align: center; cursor: pointer; margin-bottom: 14px; color: var(--muted); }
+.file b { color: var(--accent); }
+.file input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.file:focus-within { border-color: var(--accent); }
+
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 60; background: var(--ink); color: var(--bg); padding: 11px 16px; border-radius: 10px; font-size: .9rem; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
+</style>
+
+<header class="bar">
+  <h1>Registro Mensile<small id="sheetLabel">Sezione numeri</small></h1>
+  <div class="menu-wrap">
+    <button class="dots" id="dotsBtn" aria-label="Menu" aria-haspopup="true" aria-expanded="false">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+    </button>
+    <div class="menu" id="menu" hidden>
+      <button id="openSettings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Impostazioni</button>
+      <button id="openExport"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 17v3h16v-3"/></svg>Esporta</button>
+      <button id="openImport"><svg viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M4 17v3h16v-3"/></svg>Importa</button>
+      <button id="openDelete" class="danger"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>Elimina</button>
+      <button id="goToday"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Vai al mese corrente</button>
+    </div>
+  </div>
+</header>
+
+<nav class="secs" id="secs" aria-label="Sezioni"></nav>
+
+<div class="sechead">
+  <input id="secName" class="secname" placeholder="Nome della sezione" autocomplete="off" aria-label="Nome della sezione">
+  <div class="month">
+    <button class="icon-btn" id="prevM" aria-label="Mese precedente">&#8249;</button>
+    <b id="monthName"></b>
+    <button class="icon-btn" id="nextM" aria-label="Mese successivo">&#8250;</button>
+  </div>
+</div>
+
+<div class="sheet" id="sheet"><table id="grid"></table></div>
+
+<div class="under">
+  <button class="ghost" id="addRow">+ Aggiungi voce</button>
+  <button class="ghost" id="delRow">− Togli ultima voce</button>
+  <div class="legend">
+    <span><i style="background:var(--cold)"></i>Voci normali</span>
+    <span><i style="background:var(--warm)"></i>Ultime due voci (fascia 2)</span>
+  </div>
+</div>
+<p class="status" id="status">Caricamento…</p>
+
+<!-- PIN -->
+<div class="scrim" id="pinScrim" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="pinTitle">
+    <h2 id="pinTitle">Impostazioni</h2>
+    <p class="sub">Inserisci il PIN per continuare.</p>
+    <div class="pin-dots" id="pinDots"><span></span><span></span><span></span><span></span></div>
+    <div class="pin-err" id="pinErr"></div>
+    <div class="keypad" id="keypad">
+      <button>1</button><button>2</button><button>3</button>
+      <button>4</button><button>5</button><button>6</button>
+      <button>7</button><button>8</button><button>9</button>
+      <button class="blank" tabindex="-1" aria-hidden="true"></button><button>0</button><button data-k="del" aria-label="Cancella">&#9003;</button>
+    </div>
+    <div class="row-x"><button class="link" id="pinCancel">Annulla</button></div>
+  </div>
+</div>
+
+<!-- Settings -->
+<div class="scrim" id="setScrim" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+    <h2 id="setTitle">Generazione valori</h2>
+    <p class="sub">Riempie i fogli dal mese di inizio fino a oggi.</p>
+    <label class="field"><span>Mese di inizio</span>
+      <div class="inline"><select id="startMonth"></select><select id="startYear"></select></div>
+    </label>
+    <div class="field"><span>Voci normali</span>
+      <div class="inline">da <input class="num" id="aMin" inputmode="decimal"> a <input class="num" id="aMax" inputmode="decimal"></div>
+    </div>
+    <div class="field"><span>Ultime due voci</span>
+      <div class="inline">da <input class="num" id="bMin" inputmode="decimal"> a <input class="num" id="bMax" inputmode="decimal"></div>
+    </div>
+    <label class="check"><input type="checkbox" id="overwrite"> Sovrascrivi anche le caselle già compilate</label>
+    <div class="field"><span>Quando cambiano le ultime due voci, aggiorna</span>
+      <div class="opts blue" id="raOpts">
+        <label><span class="head"><input type="radio" name="raMode" value="month"> Solo il mese corrente</span></label>
+        <label><span class="head"><input type="radio" name="raMode" value="from"> Da un mese fino a oggi</span>
+          <span class="inline">da <select id="raFromOnly"></select></span></label>
+        <label><span class="head"><input type="radio" name="raMode" value="range"> Da un mese a un altro</span>
+          <span class="inline">da <select id="raFrom"></select> a <select id="raTo"></select></span></label>
+        <label><span class="head"><input type="radio" name="raMode" value="all"> Tutti i mesi</span></label>
+      </div>
+    </div>
+    <div class="summary" id="summary"></div>
+    <button class="go" id="goBtn">Vai pure</button>
+    <div class="row-x"><button class="link" id="setClose">Chiudi</button></div>
+  </div>
+</div>
+
+<!-- Import -->
+<div class="scrim" id="impScrim" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="impTitle">
+    <h2 id="impTitle">Importa</h2>
+    <p class="sub">Carica un file Excel (anche scaricato da Google Fogli). Ogni foglio chiamato come un mese, per esempio "Maggio 2026", va nel mese corrispondente.</p>
+    <label class="file" id="impDrop"><input type="file" id="impFile" accept=".xlsx,.xls,.ods,.csv"><b>Scegli il file</b><span id="impFileName">.xlsx, .xls, .ods o .csv</span></label>
+    <div class="mlist" id="impList" hidden></div>
+    <label class="field" id="impSecWrap" hidden><span>Importa nella sezione</span><select id="impSec"></select></label>
+    <p class="sub" id="impNote" hidden>I mesi importati sostituiscono i valori già presenti in quei mesi. Le voci vengono abbinate per nome; quelle nuove si aggiungono in fondo.</p>
+    <button class="go" id="impGo" disabled>Importa</button>
+    <div class="row-x"><button class="link" id="impClose">Chiudi</button></div>
+  </div>
+</div>
+
+<!-- Delete -->
+<div class="scrim" id="delScrim" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="delTitle">
+    <h2 id="delTitle">Elimina</h2>
+    <p class="sub">Cancella i valori inseriti. Non si può annullare: esporta prima un file se vuoi tenerne una copia.</p>
+    <div class="opts">
+      <label><span class="head"><input type="radio" name="delMode" value="month" checked> Solo <span id="delCur"></span></span></label>
+      <label><span class="head"><input type="radio" name="delMode" value="range"> Da un mese a un altro</span>
+        <span class="inline">da <select id="delFrom"></select> a <select id="delTo"></select></span></label>
+      <label><span class="head"><input type="radio" name="delMode" value="all"> Elimina tutto</span>
+        <span class="inline"><input type="checkbox" id="delNames" style="width:18px;height:18px;accent-color:var(--danger)"> Cancella anche i nomi delle voci</span></label>
+      <label id="delSecOpt"><span class="head"><input type="radio" name="delMode" value="section"> Elimina l'intera sezione “<span id="delSecName"></span>”</span></label>
+    </div>
+    <div class="summary" id="delSummary"></div>
+    <button class="go red" id="delGo">Elimina</button>
+    <div class="row-x"><button class="link" id="delClose">Chiudi</button></div>
+  </div>
+</div>
+
+<!-- Export -->
+<div class="scrim" id="expScrim" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="expTitle">
+    <h2 id="expTitle">Esporta</h2>
+    <p class="sub">Scegli i mesi: ogni mese diventa un foglio del file Excel, che si apre anche con Google Fogli.</p>
+    <div class="inline" style="margin-bottom:10px">
+      <button class="link" id="expAll">Seleziona tutti</button>
+      <button class="link" id="expNone">Nessuno</button>
+    </div>
+    <div class="mlist" id="expList"></div>
+    <button class="go" id="expGo">Esporta in Excel</button>
+    <div class="row-x"><button class="link" id="expClose">Chiudi</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(() => {
+  const PIN = "8872";
+  const MESI = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+  const LS = "registro-mensile-v1";
+  const $ = id => document.getElementById(id);
+
+  const now = new Date();
+  const curKey = mk(now.getFullYear(), now.getMonth());
+  const uid = () => Math.random().toString(36).slice(2, 10);
+
+  function mk(y, m) { return y + "-" + String(m + 1).padStart(2, "0"); }
+  function parseKey(k) { const [y, m] = k.split("-").map(Number); return { y, m: m - 1 }; }
+  function shift(k, d) { const { y, m } = parseKey(k); const t = new Date(y, m + d, 1); return mk(t.getFullYear(), t.getMonth()); }
+  function daysIn(k) { const { y, m } = parseKey(k); return new Date(y, m + 1, 0).getDate(); }
+  function label(k) { const { y, m } = parseKey(k); return MESI[m] + " " + y; }
+  function fmt(v) { return v == null ? "" : v.toFixed(1).replace(".", ","); }
+  function num(s) {
+    const t = String(s).trim().replace(",", ".").replace("−", "-");
+    if (t === "" || t === "-") return null;
+    const n = Number(t);
+    return Number.isFinite(n) ? Math.round(n * 10) / 10 : undefined;
+  }
+
+  function defaults() {
+    return {
+      rows: Array.from({ length: 10 }, () => ({ id: uid(), name: "" })),
+      startMonth: shift(curKey, -6),
+      ranges: { a: [-21.2, -18.3], b: [3.3, 3.6] },
+      overwrite: false,
+      reassign: { mode: "all", from: shift(curKey, -6), to: curKey }
+    };
+  }
+
+  // ---- state & storage ----
+  // Each section has its own rows, settings and months. The first section ("main")
+  // keeps the original paths so data saved before sections existed stays in place.
+  let sections = [{ id: "main", name: "", type: "numeri" }];
+  let active = "main";
+  let config = defaults();
+  let months = {};          // "YYYY-MM" -> { cells: { rowId: { day: number } } }
+  let viewKey = curKey;
+  let db = null;
+
+  const cfgPath = (sid = active) => sid === "main" ? "registro/config" : "sezioni/" + sid;
+  const monthsCol = (sid = active) => sid === "main" ? "mesi" : "sezioni/" + sid + "/mesi";
+  const monthPath = (k, sid = active) => monthsCol(sid) + "/" + k;
+  const lsKey = (sid = active) => sid === "main" ? LS : LS + ":" + sid;
+
+  function loadLocal() {
+    config = defaults(); months = {};
+    try {
+      const raw = localStorage.getItem(lsKey());
+      if (raw) { const s = JSON.parse(raw); if (s.config) config = Object.assign(defaults(), s.config); if (s.months) months = s.months; }
+      const idx = JSON.parse(localStorage.getItem(LS + ":sezioni") || "null");
+      if (idx && idx.list && idx.list.length) sections = idx.list;
+    } catch (e) {}
+  }
+  function saveLocal() {
+    try {
+      localStorage.setItem(lsKey(), JSON.stringify({ config, months }));
+      localStorage.setItem(LS + ":sezioni", JSON.stringify({ list: sections, active }));
+    } catch (e) {}
+  }
+
+  const chains = {};
+  function writeDoc(path, data) {
+    saveLocal();
+    if (!db) return Promise.resolve();
+    const body = JSON.parse(JSON.stringify(data));
+    chains[path] = (chains[path] || Promise.resolve())
+      .then(() => db.doc(path).set(body))
+      .catch(err => {
+        if (err && err.code === "invalid_argument") toast("Non hai i permessi per salvare le modifiche.");
+        else if (err && err.code === "quota_exceeded") toast("Spazio di salvataggio esaurito.");
+        else toast("Salvataggio non riuscito, riprova.");
+      });
+    return chains[path];
+  }
+  function deleteDoc(path) {
+    saveLocal();
+    if (!db) return Promise.resolve();
+    chains[path] = (chains[path] || Promise.resolve())
+      .then(() => db.doc(path).delete())
+      .catch(() => toast("Eliminazione non riuscita, riprova."));
+    return chains[path];
+  }
+  const timers = {}, pending = {};
+  function later(key, fn, ms = 600) {
+    clearTimeout(timers[key]);
+    pending[key] = fn;
+    timers[key] = setTimeout(() => { delete timers[key]; delete pending[key]; fn(); }, ms);
+  }
+  // run every scheduled save now (before switching section)
+  function flush() { Object.keys(pending).forEach(k => { clearTimeout(timers[k]); delete timers[k]; const fn = pending[k]; delete pending[k]; fn(); }); }
+  const saveConfig = () => { const path = cfgPath(), c = config; later("config", () => writeDoc(path, c)); };
+  const saveMonth = k => { const path = monthPath(k), ms = months; later("m" + k, () => writeDoc(path, ms[k] || { cells: {} })); };
+  const saveIndex = () => later("idx", () => writeDoc("registro/sezioni", { list: sections }));
+
+  // ---- rendering ----
+  function namedRows() { return config.rows.filter(r => r.name.trim()); }
+  function bSet() { return new Set(namedRows().slice(-2).map(r => r.id)); }
+  const bSig = () => [...bSet()].join(",");
+
+  // ---- automatic update of the last two rows ----
+  function reassignScope() {
+    const r = config.reassign || {};
+    const keys = Object.keys(months);
+    if (r.mode === "month") return keys.filter(k => k === curKey);
+    if (r.mode === "from") return keys.filter(k => k >= r.from && k <= curKey);
+    if (r.mode === "range") { const [a, b] = [r.from, r.to].sort(); return keys.filter(k => k >= a && k <= b); }
+    return keys;
+  }
+  // distance from a value to a [lo, hi] interval
+  const gap = (v, [lo, hi]) => v < lo ? lo - v : v > hi ? v - hi : 0;
+  function checkReassign() {
+    config.bSig = bSig();
+    const b = bSet(), A = config.ranges.a, B = config.ranges.b;
+    let changed = 0, added = 0;
+    for (const k of reassignScope()) {
+      const cells = months[k] && months[k].cells; if (!cells) continue;
+      let touched = false;
+      // days that some named row already has: a newly named row is filled on those days
+      const days = new Set();
+      for (const r of namedRows()) for (const d in (cells[r.id] || {})) days.add(d);
+      for (const r of namedRows()) {
+        const row = cells[r.id] || (cells[r.id] = {});
+        const wantB = b.has(r.id), [lo, hi] = wantB ? B : A;
+        for (const d of days) if (row[d] == null) { row[d] = rand(lo, hi); added++; touched = true; }
+        for (const d in row) {
+          const isB = gap(row[d], B) < gap(row[d], A);
+          if (isB !== wantB) { row[d] = rand(lo, hi); changed++; touched = true; }
+        }
+      }
+      if (touched) saveMonth(k);
+    }
+    saveConfig();
+    refresh();
+    const parts = [];
+    if (added) parts.push(`${added} valori aggiunti`);
+    if (changed) parts.push(`${changed} convertiti`);
+    if (parts.length) toast(`Voci aggiornate: ${parts.join(", ")}.`);
+  }
+  const queueReassign = (ms = 1200) => later("reassign", checkReassign, ms);
+
+  function render() {
+    const nDays = daysIn(viewKey);
+    const isCur = viewKey === curKey;
+    const today = now.getDate();
+    const cells = (months[viewKey] && months[viewKey].cells) || {};
+    const b = bSet();
+    $("monthName").textContent = label(viewKey);
+
+    let h = '<thead><tr><th class="corner sticky">Voce</th>';
+    for (let d = 1; d <= 31; d++) h += `<th class="day${isCur && d === today ? " is-today" : ""}">${d}</th>`;
+    h += "</tr></thead><tbody>";
+    config.rows.forEach((r, i) => {
+      h += `<tr data-row="${r.id}"${b.has(r.id) ? ' class="b"' : ""}><th class="name sticky"><div class="name-in" contenteditable="true" spellcheck="false" data-ph="Nome ${i + 1}" id="n-${r.id}"></div></th>`;
+      for (let d = 1; d <= 31; d++) {
+        const off = d > nDays;
+        const v = cells[r.id] && cells[r.id][d];
+        h += `<td class="cell${off ? " off" : ""}${isCur && d === today ? " is-today" : ""}"><input id="c-${r.id}-${d}" data-d="${d}" inputmode="decimal" autocomplete="off" aria-label="${r.name || "Voce " + (i + 1)}, giorno ${d}" value="${off ? "" : fmt(v)}"${off ? " disabled" : ""}></td>`;
+      }
+      h += "</tr>";
+    });
+    $("grid").innerHTML = h + "</tbody>";
+    config.rows.forEach(r => { $("n-" + r.id).textContent = r.name; });
+  }
+
+  // Refresh values from new data without rebuilding the field being typed in.
+  function refresh() {
+    const sameShape = [...document.querySelectorAll("#grid tbody tr")].map(t => t.dataset.row).join() === config.rows.map(r => r.id).join();
+    const focus = document.activeElement;
+    if (!sameShape || !$("grid").contains(focus)) { render(); return; }
+    const cells = (months[viewKey] && months[viewKey].cells) || {};
+    const b = bSet();
+    config.rows.forEach(r => {
+      const n = $("n-" + r.id);
+      if (n !== focus && n.textContent !== r.name) n.textContent = r.name;
+      n.closest("tr").classList.toggle("b", b.has(r.id));
+      for (let d = 1; d <= daysIn(viewKey); d++) {
+        const inp = $("c-" + r.id + "-" + d);
+        if (inp !== focus) inp.value = fmt(cells[r.id] && cells[r.id][d]);
+      }
+    });
+  }
+
+  // ---- editing ----
+  $("grid").addEventListener("input", e => {
+    const t = e.target;
+    const tr = t.closest("tr"); if (!tr) return;
+    const rowId = tr.dataset.row;
+    if (t.classList.contains("name-in")) {
+      const row = config.rows.find(r => r.id === rowId);
+      row.name = t.textContent.replace(/\s+/g, " ").trimStart();
+      const b = bSet();
+      document.querySelectorAll("#grid tbody tr").forEach(x => x.classList.toggle("b", b.has(x.dataset.row)));
+      saveConfig();
+      queueReassign();
+    } else if (t.tagName === "INPUT") {
+      const v = num(t.value);
+      if (v === undefined) return;
+      const m = months[viewKey] || (months[viewKey] = { cells: {} });
+      const row = m.cells[rowId] || (m.cells[rowId] = {});
+      if (v === null) delete row[t.dataset.d]; else row[t.dataset.d] = v;
+      saveMonth(viewKey);
+    }
+  });
+  $("grid").addEventListener("keydown", e => {
+    if (e.target.classList.contains("name-in") && e.key === "Enter") { e.preventDefault(); e.target.blur(); }
+  });
+  $("grid").addEventListener("focusout", e => {
+    const t = e.target;
+    if (t.tagName === "INPUT") { const v = num(t.value); t.value = v == null ? "" : fmt(v); }
+    if (t.classList.contains("name-in")) { t.textContent = t.textContent.trim(); if (timers.reassign) queueReassign(50); }
+  });
+  $("grid").addEventListener("paste", e => {
+    if (!e.target.classList.contains("name-in")) return;
+    e.preventDefault();
+    document.execCommand("insertText", false, (e.clipboardData.getData("text/plain") || "").replace(/\s+/g, " "));
+  });
+
+  $("addRow").onclick = () => { config.rows.push({ id: uid(), name: "" }); render(); saveConfig(); $("n-" + config.rows.at(-1).id).focus(); };
+  $("delRow").onclick = () => {
+    if (config.rows.length <= 1) return;
+    const last = config.rows.at(-1);
+    const hasData = Object.values(months).some(m => m.cells && m.cells[last.id] && Object.keys(m.cells[last.id]).length);
+    if ((last.name.trim() || hasData) && $("delRow").dataset.armed !== "1") {
+      $("delRow").dataset.armed = "1";
+      $("delRow").textContent = "Tocca di nuovo per togliere “" + (last.name.trim() || "ultima voce") + "”";
+      setTimeout(() => { $("delRow").dataset.armed = ""; $("delRow").textContent = "− Togli ultima voce"; }, 3500);
+      return;
+    }
+    $("delRow").dataset.armed = ""; $("delRow").textContent = "− Togli ultima voce";
+    config.rows.pop(); render(); saveConfig(); checkReassign();
+  };
+
+  $("prevM").onclick = () => { viewKey = shift(viewKey, -1); render(); };
+  $("nextM").onclick = () => { viewKey = shift(viewKey, 1); render(); };
+
+  // ---- menu ----
+  const menu = $("menu");
+  function setMenu(open) { menu.hidden = !open; $("dotsBtn").setAttribute("aria-expanded", open); }
+  $("dotsBtn").onclick = e => { e.stopPropagation(); setMenu(menu.hidden); };
+  document.addEventListener("click", e => { if (!menu.hidden && !menu.contains(e.target)) setMenu(false); });
+  $("goToday").onclick = () => { setMenu(false); viewKey = curKey; render(); };
+  $("openSettings").onclick = () => { setMenu(false); openPin(openSettings); };
+  $("openDelete").onclick = () => { setMenu(false); openPin(openDelete); };
+  $("openImport").onclick = () => { setMenu(false); openImport(); };
+
+  // ---- PIN ----
+  let pin = "";
+  function drawPin() { [...$("pinDots").children].forEach((s, i) => s.classList.toggle("on", i < pin.length)); }
+  let pinNext = null;
+  function openPin(next) { pinNext = next; pin = ""; $("pinErr").textContent = ""; drawPin(); $("pinScrim").hidden = false; }
+  function closePin() { $("pinScrim").hidden = true; }
+  function pressKey(k) {
+    if (k === "del") { pin = pin.slice(0, -1); drawPin(); return; }
+    if (pin.length >= 4) return;
+    pin += k; drawPin(); $("pinErr").textContent = "";
+    if (pin.length === 4) {
+      if (pin === PIN) { setTimeout(() => { closePin(); pinNext && pinNext(); }, 120); }
+      else {
+        const p = $("pinScrim").querySelector(".panel");
+        p.classList.remove("shake"); void p.offsetWidth; p.classList.add("shake");
+        $("pinErr").textContent = "PIN errato, riprova.";
+        setTimeout(() => { pin = ""; drawPin(); }, 350);
+      }
+    }
+  }
+  $("keypad").addEventListener("click", e => {
+    const btn = e.target.closest("button"); if (!btn || btn.classList.contains("blank")) return;
+    pressKey(btn.dataset.k || btn.textContent);
+  });
+  document.addEventListener("keydown", e => {
+    if ($("pinScrim").hidden) return;
+    if (/^\d$/.test(e.key)) pressKey(e.key);
+    else if (e.key === "Backspace") pressKey("del");
+    else if (e.key === "Escape") closePin();
+  });
+  $("pinCancel").onclick = closePin;
+
+  // ---- settings & generation ----
+  function fillSelects() {
+    $("startMonth").innerHTML = MESI.map((n, i) => `<option value="${i}">${n}</option>`).join("");
+    let ys = "";
+    for (let y = now.getFullYear() - 3; y <= now.getFullYear(); y++) ys += `<option value="${y}">${y}</option>`;
+    $("startYear").innerHTML = ys;
+  }
+  function openSettings() {
+    const { y, m } = parseKey(config.startMonth);
+    if (![...$("startYear").options].some(o => +o.value === y)) $("startYear").insertAdjacentHTML("afterbegin", `<option value="${y}">${y}</option>`);
+    $("startMonth").value = m; $("startYear").value = y;
+    $("aMin").value = fmt(config.ranges.a[0]); $("aMax").value = fmt(config.ranges.a[1]);
+    $("bMin").value = fmt(config.ranges.b[0]); $("bMax").value = fmt(config.ranges.b[1]);
+    $("overwrite").checked = !!config.overwrite;
+    const ra = config.reassign || defaults().reassign;
+    const span = monthSpan();
+    [ra.from, ra.to].forEach(k => { if (k && !span.includes(k)) span.push(k); });
+    span.sort();
+    const opts = span.map(k => `<option value="${k}">${label(k)}</option>`).join("");
+    ["raFromOnly", "raFrom", "raTo"].forEach(id => $(id).innerHTML = opts);
+    $("raFromOnly").value = ra.from; $("raFrom").value = ra.from; $("raTo").value = ra.to;
+    (document.querySelector(`input[name="raMode"][value="${ra.mode}"]`) || document.querySelector('input[name="raMode"][value="all"]')).checked = true;
+    summarize();
+    $("setScrim").hidden = false;
+  }
+  function readSettings() {
+    config.startMonth = mk(+$("startYear").value, +$("startMonth").value);
+    const r = ["aMin", "aMax", "bMin", "bMax"].map(id => num($(id).value));
+    if (r.every(v => typeof v === "number")) {
+      config.ranges = { a: [Math.min(r[0], r[1]), Math.max(r[0], r[1])], b: [Math.min(r[2], r[3]), Math.max(r[2], r[3])] };
+    }
+    config.overwrite = $("overwrite").checked;
+  }
+  function monthsToFill() {
+    let k = config.startMonth > curKey ? curKey : config.startMonth;
+    const list = [];
+    while (k <= curKey) { list.push(k); k = shift(k, 1); }
+    return list;
+  }
+  function summarize() {
+    readSettings();
+    const n = namedRows().length;
+    const list = monthsToFill();
+    const range = list.length > 1 ? `da <b>${label(list[0])}</b> a <b>${now.getDate()} ${label(curKey)}</b>` : `dal 1 al <b>${now.getDate()} ${label(curKey)}</b>`;
+    const r = config.ranges;
+    $("summary").innerHTML = n
+      ? `Riempirà ${range} per <b>${n} ${n === 1 ? "voce" : "voci"}</b> e correggerà i valori fuori fascia.<br>Valori tra ${fmt(r.a[0])} e ${fmt(r.a[1])}` + (n > 2 ? `, ultime due tra ${fmt(r.b[0])} e ${fmt(r.b[1])}.` : `; con ${n} ${n === 1 ? "voce" : "voci"} tutte usano ${fmt(r.b[0])}–${fmt(r.b[1])}.`)
+      : "Scrivi almeno un nome nella colonna <b>Voce</b>: le righe senza nome non vengono riempite.";
+    $("goBtn").disabled = !n;
+  }
+  ["startMonth", "startYear", "aMin", "aMax", "bMin", "bMax", "overwrite"].forEach(id => $(id).addEventListener("input", () => { summarize(); saveConfig(); }));
+  $("raOpts").addEventListener("input", e => {
+    const mode = e.target.id === "raFromOnly" ? "from" : e.target.matches("#raFrom, #raTo") ? "range" : null;
+    if (mode) document.querySelector(`input[name="raMode"][value="${mode}"]`).checked = true;
+    const m = document.querySelector('input[name="raMode"]:checked').value;
+    config.reassign = { mode: m, from: m === "from" ? $("raFromOnly").value : $("raFrom").value, to: $("raTo").value };
+    if (m === "from") $("raFrom").value = $("raFromOnly").value; else $("raFromOnly").value = $("raFrom").value;
+    saveConfig();
+  });
+  $("setClose").onclick = () => { $("setScrim").hidden = true; };
+
+  function rand(lo, hi) { return Math.round((lo + Math.random() * (hi - lo)) * 10) / 10; }
+  $("goBtn").onclick = () => {
+    readSettings();
+    const rows = namedRows();
+    if (!rows.length) return;
+    const b = bSet();
+    let count = 0, fixed = 0;
+    const list = monthsToFill();
+    for (const k of list) {
+      const last = k === curKey ? now.getDate() : daysIn(k);
+      const m = months[k] = { cells: JSON.parse(JSON.stringify((months[k] && months[k].cells) || {})) };
+      for (const r of rows) {
+        const row = m.cells[r.id] || (m.cells[r.id] = {});
+        const [lo, hi] = b.has(r.id) ? config.ranges.b : config.ranges.a;
+        for (let d = 1; d <= last; d++) {
+          if (config.overwrite || row[d] == null) { row[d] = rand(lo, hi); count++; }
+          else if (row[d] < lo || row[d] > hi) { row[d] = rand(lo, hi); fixed++; }
+        }
+        // days after today in the current month are checked too, never filled
+        for (const d in row) if (+d > last && (row[d] < lo || row[d] > hi)) { row[d] = rand(lo, hi); fixed++; }
+      }
+      writeDoc(monthPath(k), m);
+    }
+    config.bSig = bSig();
+    writeDoc(cfgPath(), config);
+    $("setScrim").hidden = true;
+    viewKey = curKey; render();
+    const parts = [];
+    if (count) parts.push(`${count} valori inseriti`);
+    if (fixed) parts.push(`${fixed} corretti perché fuori fascia`);
+    toast(parts.length ? `Fatto: ${parts.join(", ")} (${list.length} ${list.length === 1 ? "foglio" : "fogli"}).` : "Tutto già compilato e nella fascia giusta.");
+  };
+
+  // months worth offering in pickers: from the earliest with data (or start month) to the latest
+  function monthSpan() {
+    const keys = Object.keys(months).filter(filled).sort();
+    const first = [config.startMonth, keys[0] || curKey].sort()[0];
+    const lastK = [curKey, keys.at(-1) || curKey].sort().at(-1);
+    const list = [];
+    for (let k = first; k <= lastK; k = shift(k, 1)) list.push(k);
+    return list;
+  }
+
+  // ---- delete ----
+  function delTargets() {
+    const mode = document.querySelector('input[name="delMode"]:checked').value;
+    if (mode === "month") return [viewKey];
+    if (mode === "all" || mode === "section") return Object.keys(months);
+    const [a, b] = [$("delFrom").value, $("delTo").value].sort();
+    return Object.keys(months).filter(k => k >= a && k <= b);
+  }
+  function delSummary() {
+    const mode = document.querySelector('input[name="delMode"]:checked').value;
+    const t = delTargets();
+    const n = t.reduce((s, k) => s + filled(k), 0);
+    const sheets = t.filter(filled).length;
+    let txt = n ? `Verranno cancellati <b>${n} valori</b> in <b>${sheets} ${sheets === 1 ? "foglio" : "fogli"}</b>.` : "Non ci sono valori da cancellare qui.";
+    if (mode === "all" && $("delNames").checked) txt += " Anche i nomi delle voci verranno cancellati.";
+    if (mode === "section") txt = `La sezione “${secTitle()}” sparisce con le sue voci e ${n} valori.`;
+    $("delSummary").innerHTML = txt;
+    $("delGo").disabled = !n && !(mode === "all" && $("delNames").checked) && mode !== "section";
+    disarmDel();
+  }
+  function disarmDel() { $("delGo").dataset.armed = ""; $("delGo").textContent = "Elimina"; }
+  function openDelete() {
+    const span = monthSpan();
+    const opts = span.map(k => `<option value="${k}">${label(k)}</option>`).join("");
+    $("delFrom").innerHTML = opts; $("delTo").innerHTML = opts;
+    $("delFrom").value = span[0]; $("delTo").value = viewKey <= span.at(-1) && viewKey >= span[0] ? viewKey : span.at(-1);
+    $("delCur").textContent = label(viewKey);
+    document.querySelector('input[name="delMode"][value="month"]').checked = true;
+    $("delNames").checked = false;
+    $("delSecOpt").hidden = sections.length < 2;
+    $("delSecName").textContent = secTitle();
+    delSummary();
+    $("delScrim").hidden = false;
+  }
+  $("delScrim").addEventListener("input", e => {
+    if (e.target.matches("#delFrom, #delTo")) document.querySelector('input[name="delMode"][value="range"]').checked = true;
+    if (e.target.id === "delNames") document.querySelector('input[name="delMode"][value="all"]').checked = true;
+    delSummary();
+  });
+  $("delClose").onclick = () => { $("delScrim").hidden = true; };
+  $("delGo").onclick = () => {
+    if ($("delGo").dataset.armed !== "1") {
+      $("delGo").dataset.armed = "1"; $("delGo").textContent = "Tocca di nuovo per confermare";
+      return;
+    }
+    const mode = document.querySelector('input[name="delMode"]:checked').value;
+    const t = delTargets();
+    t.forEach(k => { clearTimeout(timers["m" + k]); delete timers["m" + k]; delete pending["m" + k]; delete months[k]; deleteDoc(monthPath(k)); });
+    if (mode === "section") {
+      const gone = active, name = secTitle();
+      clearTimeout(timers.config); delete timers.config; delete pending.config;
+      deleteDoc(cfgPath());
+      try { localStorage.removeItem(lsKey()); } catch (e) {}
+      sections = sections.filter(x => x.id !== gone);
+      writeDoc("registro/sezioni", { list: sections });
+      $("delScrim").hidden = true;
+      switchSection(sections[0].id, true);
+      toast(`Sezione “${name}” eliminata.`);
+      return;
+    }
+    if (mode === "all" && $("delNames").checked) {
+      config.rows = config.rows.map(() => ({ id: uid(), name: "" }));
+      config.bSig = bSig();
+      writeDoc(cfgPath(), config);
+    }
+    saveLocal();
+    $("delScrim").hidden = true; render();
+    toast(mode === "month" ? `${label(viewKey)} svuotato.` : mode === "all" ? "Tutto eliminato." : "Mesi eliminati.");
+  };
+
+  // ---- import ----
+  let parsed = [], fileTitle = "";
+  function openImport() {
+    parsed = []; $("impFile").value = ""; $("impFileName").textContent = ".xlsx, .xls, .ods o .csv";
+    $("impList").hidden = true; $("impNote").hidden = true; $("impSecWrap").hidden = true; $("impGo").disabled = true;
+    loadXlsx().catch(() => {});
+    $("impScrim").hidden = false;
+  }
+  function sheetMonth(name) {
+    const t = name.toLowerCase().trim();
+    let m = t.match(/([a-zà]{3,})\.?\s*[-_/ ]?\s*'?(\d{4}|\d{2})\b/);
+    if (m) {
+      const i = MESI.findIndex(x => x.toLowerCase().startsWith(m[1].slice(0, 3)));
+      const y = m[2].length === 2 ? 2000 + +m[2] : +m[2];
+      if (i >= 0) return mk(y, i);
+    }
+    m = t.match(/\b(\d{4})[-/._ ](\d{1,2})\b/); if (m && +m[2] >= 1 && +m[2] <= 12) return mk(+m[1], +m[2] - 1);
+    m = t.match(/\b(\d{1,2})[-/._ ](\d{4})\b/); if (m && +m[1] >= 1 && +m[1] <= 12) return mk(+m[2], +m[1] - 1);
+    return null;
+  }
+  function readSheet(XLSX, ws) {
+    const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null, blankrows: false });
+    const dayOf = v => { const n = typeof v === "number" ? v : Number(String(v ?? "").trim()); return Number.isInteger(n) && n >= 1 && n <= 31 ? n : null; };
+    let hi = aoa.findIndex(r => r.filter(v => dayOf(v)).length >= 3);
+    if (hi < 0) return null;
+    const head = aoa[hi];
+    const dayCols = {}; head.forEach((v, c) => { const d = dayOf(v); if (d && !Object.values(dayCols).includes(d)) dayCols[c] = d; });
+    const firstDay = Math.min(...Object.keys(dayCols).map(Number));
+    const nameCol = firstDay > 0 ? firstDay - 1 : 0;
+    const rows = [];
+    for (const r of aoa.slice(hi + 1)) {
+      const name = String(r[nameCol] ?? "").replace(/\s+/g, " ").trim();
+      const vals = {};
+      for (const c in dayCols) { const v = typeof r[c] === "number" ? Math.round(r[c] * 10) / 10 : num(r[c] ?? ""); if (typeof v === "number") vals[dayCols[c]] = v; }
+      if (name || Object.keys(vals).length) rows.push({ name, vals });
+    }
+    return rows;
+  }
+  $("impFile").addEventListener("change", async () => {
+    const f = $("impFile").files[0]; if (!f) return;
+    $("impFileName").textContent = f.name;
+    try {
+      const XLSX = await loadXlsx();
+      const wb = XLSX.read(await f.arrayBuffer(), { type: "array" });
+      fileTitle = String((wb.Props && wb.Props.Title) || "").trim();
+      parsed = wb.SheetNames.map(n => ({ sheet: n, key: sheetMonth(n), rows: readSheet(XLSX, wb.Sheets[n]) })).filter(p => p.rows && p.rows.length);
+      if (!parsed.length) { $("impList").hidden = false; $("impList").innerHTML = '<p class="empty">Nel file non ho trovato una riga con i giorni 1, 2, 3… e i nomi nella colonna a sinistra.</p>'; $("impGo").disabled = true; return; }
+      const span = monthSpan(); for (let k = shift(span[0], -24); k < span[0]; k = shift(k, 1)) span.unshift(k);
+      const choices = [...new Set([...span, ...parsed.map(p => p.key).filter(Boolean)])].sort().reverse();
+      $("impList").innerHTML = parsed.map((p, i) => {
+        const n = p.rows.reduce((s, r) => s + Object.keys(r.vals).length, 0);
+        const sel = `<select data-i="${i}">${choices.map(k => `<option value="${k}"${k === (p.key || viewKey) ? " selected" : ""}>${label(k)}</option>`).join("")}</select>`;
+        return `<label><input type="checkbox" data-i="${i}" checked><span>${p.key ? "" : `<small style="color:var(--muted)">“${p.sheet}” →</small> `}${sel}</span><span class="cnt">${p.rows.length} voci · ${n} valori</span></label>`;
+      }).join("");
+      // which section receives the file: same name, else this one if still empty, else a new one
+      const low = fileTitle.toLowerCase();
+      const same = low && sections.find(x => (x.name || "").trim().toLowerCase() === low);
+      const empty = !Object.keys(months).some(filled) && !namedRows().length;
+      $("impSec").innerHTML = sections.map(x => `<option value="${x.id}">${esc((x.name || "").trim() || "Sezione senza nome")}</option>`).join("")
+        + `<option value="new">+ Nuova sezione${fileTitle ? ": " + esc(fileTitle) : ""}</option>`;
+      $("impSec").value = same ? same.id : empty ? active : "new";
+      $("impSecWrap").hidden = false;
+      $("impList").hidden = false; $("impNote").hidden = false; $("impGo").disabled = false;
+    } catch (e) {
+      toast(e && e.message === "load" ? "Non riesco a caricare il modulo Excel: controlla la connessione e riprova." : "Non riesco a leggere questo file.");
+    }
+  });
+  $("impClose").onclick = () => { $("impScrim").hidden = true; };
+  $("impGo").onclick = () => {
+    const picks = [...$("impList").querySelectorAll('input[type=checkbox]')].filter(c => c.checked)
+      .map(c => ({ p: parsed[+c.dataset.i], key: $("impList").querySelector(`select[data-i="${c.dataset.i}"]`).value }));
+    if (!picks.length) { toast("Scegli almeno un foglio da importare."); return; }
+    const target = $("impSec").value;
+    if (target === "new") {
+      const id = "s" + uid();
+      sections.push({ id, name: fileTitle, type: "numeri" });
+      writeDoc("registro/sezioni", { list: sections });
+      switchSection(id);
+    } else if (target !== active) switchSection(target);
+    if (!(sec().name || "").trim() && fileTitle) { sec().name = fileTitle; saveIndex(); renderSections(); }
+    const rowFor = name => {
+      const low = name.toLowerCase();
+      let r = config.rows.find(x => x.name.trim().toLowerCase() === low);
+      if (r) return r;
+      r = config.rows.find(x => !x.name.trim() && !Object.values(months).some(m => m.cells && m.cells[x.id] && Object.keys(m.cells[x.id]).length));
+      if (r) { r.name = name; return r; }
+      r = { id: uid(), name }; config.rows.push(r); return r;
+    };
+    let count = 0;
+    for (const { p, key } of picks) {
+      const cells = {};
+      const n = daysIn(key);
+      p.rows.forEach((row, i) => {
+        const r = rowFor(row.name || "Voce " + (i + 1));
+        const v = cells[r.id] = {};
+        for (const d in row.vals) if (+d <= n) { v[d] = row.vals[d]; count++; }
+      });
+      clearTimeout(timers["m" + key]); delete timers["m" + key]; delete pending["m" + key];
+      months[key] = { cells };
+      writeDoc(monthPath(key), months[key]);
+    }
+    config.bSig = bSig();
+    writeDoc(cfgPath(), config);
+    viewKey = picks[0].key;
+    $("impScrim").hidden = true; render();
+    toast(`Importati ${count} valori in ${picks.length} ${picks.length === 1 ? "foglio" : "fogli"}.`);
+  };
+
+  // ---- export ----
+  function filled(k) {
+    const c = (months[k] && months[k].cells) || {};
+    return Object.values(c).reduce((n, row) => n + Object.keys(row).length, 0);
+  }
+  function openExport() {
+    const list = monthSpan();
+    $("expList").innerHTML = list.reverse().map(k => {
+      const n = filled(k);
+      return `<label><input type="checkbox" value="${k}"${n ? " checked" : ""}>${label(k)}<span class="cnt">${n ? n + " valori" : "vuoto"}</span></label>`;
+    }).join("");
+    $("expScrim").hidden = false;
+    loadXlsx().catch(() => {});
+  }
+  const expChecks = () => [...$("expList").querySelectorAll("input")];
+  $("openExport").onclick = () => { setMenu(false); openExport(); };
+  $("expAll").onclick = () => expChecks().forEach(c => c.checked = true);
+  $("expNone").onclick = () => expChecks().forEach(c => c.checked = false);
+  $("expClose").onclick = () => { $("expScrim").hidden = true; };
+
+  let xlsxLib;
+  function loadXlsx() {
+    return xlsxLib || (xlsxLib = new Promise((res, rej) => {
+      const s = document.createElement("script");
+      s.src = window.XLSX_SRC || "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+      s.onload = () => res(window.XLSX);
+      s.onerror = () => { xlsxLib = null; rej(new Error("load")); };
+      document.head.appendChild(s);
+    }));
+  }
+  function buildSheet(XLSX, k) {
+    const n = daysIn(k);
+    const cells = (months[k] && months[k].cells) || {};
+    const head = ["Voce"]; for (let d = 1; d <= n; d++) head.push(d);
+    const rows = [head];
+    config.rows.forEach((r, i) => {
+      const vals = cells[r.id] || {};
+      if (!r.name.trim() && !Object.keys(vals).length) return;
+      const line = [r.name.trim() || "Voce " + (i + 1)];
+      for (let d = 1; d <= n; d++) line.push(vals[d] == null ? null : vals[d]);
+      rows.push(line);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    const nameW = Math.max(8, ...rows.map(r => String(r[0]).length)) + 2;
+    ws["!cols"] = [{ wch: Math.min(nameW, 40) }, ...Array.from({ length: n }, () => ({ wch: 6 }))];
+    ws["!freeze"] = { xSplit: 1, ySplit: 1 };
+    // one decimal shown for every value
+    Object.keys(ws).forEach(a => { if (a[0] !== "!" && typeof ws[a].v === "number" && !/^[A-Z]+1$/.test(a)) ws[a].z = "0.0"; });
+    return ws;
+  }
+  $("expGo").onclick = async () => {
+    const sel = expChecks().filter(c => c.checked).map(c => c.value).sort();
+    if (!sel.length) { toast("Scegli almeno un mese da esportare."); return; }
+    $("expGo").disabled = true; $("expGo").textContent = "Preparo il file…";
+    try {
+      // no await when the library is ready: the phone's share sheet needs the tap to be recent
+      const XLSX = window.XLSX || await loadXlsx();
+      const wb = XLSX.utils.book_new();
+      wb.Props = { Title: secTitle() === "Sezione senza nome" ? "" : secTitle() };
+      sel.forEach(k => XLSX.utils.book_append_sheet(wb, buildSheet(XLSX, k), label(k)));
+      const data = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      const filename = (secTitle() === "Sezione senza nome" ? "Registro" : secTitle()) + " " + (sel.length > 1 ? label(sel[0]) + " - " + label(sel.at(-1)) : label(sel[0])) + ".xlsx";
+      await saveFile(filename, data);
+    } catch (e) {
+      const code = e && e.code;
+      if (code === "declined") toast("Esportazione annullata.");
+      else if (e && e.message === "load") toast("Non riesco a caricare il modulo Excel: controlla la connessione e riprova.");
+      else toast("Esportazione non riuscita su questo dispositivo.");
+    } finally {
+      $("expGo").disabled = false; $("expGo").textContent = "Esporta in Excel";
+    }
+  };
+  async function saveFile(filename, data) {
+    const dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null;
+    if (dl) {
+      await dl.save({ filename, data });
+      $("expScrim").hidden = true; toast("File esportato.");
+      return;
+    }
+    // outside claude.ai: the phone's share sheet (WhatsApp, email, Files…), else a download
+    const type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    const file = typeof File === "function" ? new File([data], filename, { type }) : null;
+    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: filename });
+        $("expScrim").hidden = true; toast("File pronto da inviare.");
+        return;
+      } catch (e) {
+        if (e && e.name === "AbortError") { toast("Esportazione annullata."); return; }
+      }
+    }
+    const url = URL.createObjectURL(new Blob([data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+    const a = Object.assign(document.createElement("a"), { href: url, download: filename });
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    $("expScrim").hidden = true; toast("File esportato.");
+  }
+
+  let toastT;
+  function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3200); }
+
+  // ---- sections ----
+  const sec = () => sections.find(x => x.id === active) || sections[0];
+  const secTitle = () => (sec().name || "").trim() || "Sezione senza nome";
+  function renderSections() {
+    $("secs").innerHTML = sections.map(x => `<button class="chip" data-sid="${x.id}" aria-current="${x.id === active}">${esc((x.name || "").trim() || "Sezione senza nome")}</button>`).join("")
+      + '<button class="chip add" id="addSec">+ Nuova sezione</button>';
+    if (document.activeElement !== $("secName")) $("secName").value = sec().name || "";
+  }
+  function esc(t) { return t.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); }
+  $("secs").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.id === "addSec") {
+      const id = "s" + uid();
+      sections.push({ id, name: "", type: "numeri" });
+      writeDoc("registro/sezioni", { list: sections });
+      switchSection(id);
+      $("secName").focus();
+      return;
+    }
+    if (b.dataset.sid !== active) switchSection(b.dataset.sid);
+  });
+  $("secName").addEventListener("input", () => {
+    sec().name = $("secName").value;
+    const chip = $("secs").querySelector(`[data-sid="${active}"]`);
+    if (chip) chip.textContent = secTitle();
+    saveIndex(); saveLocal();
+  });
+  $("secName").addEventListener("keydown", e => { if (e.key === "Enter") $("secName").blur(); });
+
+  let unsubs = [];
+  function switchSection(id, skipFlush) {
+    if (!skipFlush) flush();
+    unsubs.forEach(u => u()); unsubs = [];
+    active = id; viewKey = curKey;
+    loadLocal(); saveLocal();
+    renderSections(); render();
+    subscribeSection();
+  }
+  function subscribeSection() {
+    if (!db) return;
+    const sid = active;
+    unsubs.push(db.doc(cfgPath(sid)).onSnapshot(s => {
+      if (sid !== active || s.metadata.hasPendingWrites || timers.config) return;
+      if (s.exists) { config = Object.assign(defaults(), JSON.parse(JSON.stringify(s.data()))); saveLocal(); refresh(); }
+    }, () => {}));
+    unsubs.push(db.collection(monthsCol(sid)).onSnapshot(s => {
+      if (sid !== active || s.metadata.hasPendingWrites) return;
+      const next = {};
+      s.docs.forEach(doc => { next[doc.id] = JSON.parse(JSON.stringify(doc.data())); });
+      // keep months typed here that are still waiting to be saved
+      Object.keys(months).forEach(k => { if (timers["m" + k]) next[k] = months[k]; });
+      months = next; saveLocal(); refresh();
+    }, () => {}));
+  }
+
+  // ---- boot ----
+  fillSelects();
+  try { const idx = JSON.parse(localStorage.getItem(LS + ":sezioni") || "null"); if (idx && idx.active) active = idx.active; } catch (e) {}
+  loadLocal();
+  if (!sections.some(x => x.id === active)) { active = sections[0].id; loadLocal(); }
+  renderSections();
+  render();
+
+  const claudeApi = window.claude;
+  const ready = claudeApi && claudeApi.use ? claudeApi.use("db") : Promise.resolve(null);
+  ready.then(d => {
+    db = d;
+    if (!db) {
+      $("status").textContent = "Dati salvati su questo dispositivo. Per passarli a qualcuno usa Esporta, e lui Importa.";
+      if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+      return;
+    }
+    $("status").textContent = "Salvataggio automatico attivo.";
+    db.doc("registro/sezioni").onSnapshot(s => {
+      if (s.metadata.hasPendingWrites || timers.idx || !s.exists) return;
+      const list = JSON.parse(JSON.stringify(s.data().list || []));
+      if (!list.length) return;
+      sections = list;
+      if (!sections.some(x => x.id === active)) switchSection(sections[0].id);
+      else { renderSections(); saveLocal(); }
+    }, () => {});
+    subscribeSection();
+  }).catch(() => { $("status").textContent = "Salvato solo su questo dispositivo."; });
+})();
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+</script>
+</body>
+</html>
