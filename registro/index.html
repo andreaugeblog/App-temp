@@ -366,6 +366,9 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
       <div class="inline">1ª roja: día <input class="num" id="g3red1" inputmode="numeric" style="width:4em"></div>
       <div class="inline">2ª roja: día <input class="num" id="g3red2" inputmode="numeric" style="width:4em"></div>
     </div>
+    <div class="field"><span>Día de la fila verde (cada 3 meses)</span>
+      <div class="inline">Verde: día <input class="num" id="g3green" inputmode="numeric" style="width:4em"></div>
+    </div>
     <div class="summary" id="g3Summary"></div>
     <button class="go" id="g3Go">Adelante</button>
     <div class="row-x"><button class="link" id="set3Close">Cerrar</button></div>
@@ -715,21 +718,28 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     9: { every: 14, make: () => pick(LETTERS) },
     // red rows: once a month, on the day chosen in the settings for each row
     10: { monthly: "red1", make: () => pick(LETTERS) },
-    11: { monthly: "red2", make: () => pick(LETTERS) }
+    11: { monthly: "red2", make: () => pick(LETTERS) },
+    // green row: every 3 months, counted from the start day's month, on its chosen day
+    12: { monthly: "green", months: 3, make: () => pick(LETTERS) }
   };
   const S3_GEN_TEXT = {
-    7: "azules (2ª–6ª): una columna con una letra de la A a la G, luego 6 vacías",
-    14: "amarillas (7ª–8ª): una columna con una letra de la A a la G, luego 13 vacías",
-    m: "rojas (9ª–10ª): una letra de la A a la G una vez al mes, el día elegido abajo (si el mes no tiene ese día, el último)"
+    7: "Filas azules (2ª–6ª): una columna con una letra de la A a la G, luego 6 vacías",
+    14: "Filas amarillas (7ª–8ª): una columna con una letra de la A a la G, luego 13 vacías",
+    m: "Filas rojas (9ª–10ª): una letra de la A a la G una vez al mes, el día elegido abajo (si el mes no tiene ese día, el último)",
+    q: "Fila verde (11ª): una letra de la A a la G cada 3 meses, el día elegido abajo, empezando por el mes del día de inicio"
   };
-  const g3Defaults = () => ({ start: curKey + "-01", red1: 1, red2: 15 });
+  const g3Defaults = () => ({ start: curKey + "-01", red1: 1, red2: 15, green: 1 });
   function g3Cells(g) {
     const out = [], first = dayNum(g.start), last = dayNum(todayIso());
     for (let n = first; n <= last; n++) {
       const dt = new Date(n * 864e5), key = mk(dt.getUTCFullYear(), dt.getUTCMonth()), day = dt.getUTCDate();
       for (const r in S3_GEN) {
         const rule = S3_GEN[r];
-        const on = rule.monthly ? day === Math.min(g[rule.monthly], daysIn(key)) : (n - first) % rule.every === 0;
+        const sk = parseKey(g.start.slice(0, 7)), mk2 = parseKey(key);
+        const monthsIn = (mk2.y - sk.y) * 12 + (mk2.m - sk.m);
+        const on = rule.monthly
+          ? monthsIn % (rule.months || 1) === 0 && day === Math.min(g[rule.monthly], daysIn(key))
+          : (n - first) % rule.every === 0;
         out.push({ key, day, r: +r, on });
       }
     }
@@ -737,7 +747,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   }
   function summarize3() {
     const g = config.gen3 = Object.assign(g3Defaults(), config.gen3 || {}, $("g3Start").value ? { start: $("g3Start").value } : {});
-    ["red1", "red2"].forEach(k => { const v = parseInt($("g3" + k).value, 10); if (v >= 1 && v <= 31) g[k] = v; });
+    ["red1", "red2", "green"].forEach(k => { const v = parseInt($("g3" + k).value, 10); if (v >= 1 && v <= 31) g[k] = v; });
     const on = g3Cells(g).filter(x => x.on);
     const days = new Set(on.map(x => x.key + x.day)).size;
     $("g3Summary").innerHTML = on.length
@@ -747,12 +757,12 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   }
   function openSettings3() {
     const g = Object.assign(g3Defaults(), config.gen3 || {});
-    $("g3Start").value = g.start; $("g3red1").value = g.red1; $("g3red2").value = g.red2;
-    $("g3Rules").innerHTML = Object.values(S3_GEN_TEXT).map(t => "Filas " + t).join("<br>") + "<br>La fila verde todavía no genera valores.";
+    $("g3Start").value = g.start; $("g3red1").value = g.red1; $("g3red2").value = g.red2; $("g3green").value = g.green;
+    $("g3Rules").innerHTML = Object.values(S3_GEN_TEXT).join("<br>");
     summarize3();
     $("set3Scrim").hidden = false;
   }
-  ["g3Start", "g3red1", "g3red2"].forEach(id => $(id).addEventListener("input", () => { summarize3(); saveConfig(); }));
+  ["g3Start", "g3red1", "g3red2", "g3green"].forEach(id => $(id).addEventListener("input", () => { summarize3(); saveConfig(); }));
   $("set3Close").onclick = () => { $("set3Scrim").hidden = true; };
   $("g3Go").onclick = () => {
     summarize3();
