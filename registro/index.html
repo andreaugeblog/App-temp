@@ -424,10 +424,7 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
   // distance from a value to a [lo, hi] interval
   const gap = (v, [lo, hi]) => v < lo ? lo - v : v > hi ? v - hi : 0;
   function checkReassign() {
-    const sig = bSig();
-    if (config.bSig === undefined) { config.bSig = sig; saveConfig(); return; }
-    if (sig === config.bSig) return;
-    config.bSig = sig;
+    config.bSig = bSig();
     const b = bSet(), A = config.ranges.a, B = config.ranges.b;
     let changed = 0;
     for (const k of reassignScope()) {
@@ -632,7 +629,7 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
     const range = list.length > 1 ? `da <b>${label(list[0])}</b> a <b>${now.getDate()} ${label(curKey)}</b>` : `dal 1 al <b>${now.getDate()} ${label(curKey)}</b>`;
     const r = config.ranges;
     $("summary").innerHTML = n
-      ? `Riempirà ${range} per <b>${n} ${n === 1 ? "voce" : "voci"}</b>.<br>Valori tra ${fmt(r.a[0])} e ${fmt(r.a[1])}` + (n > 2 ? `, ultime due tra ${fmt(r.b[0])} e ${fmt(r.b[1])}.` : `; con ${n} ${n === 1 ? "voce" : "voci"} tutte usano ${fmt(r.b[0])}–${fmt(r.b[1])}.`)
+      ? `Riempirà ${range} per <b>${n} ${n === 1 ? "voce" : "voci"}</b> e correggerà i valori fuori fascia.<br>Valori tra ${fmt(r.a[0])} e ${fmt(r.a[1])}` + (n > 2 ? `, ultime due tra ${fmt(r.b[0])} e ${fmt(r.b[1])}.` : `; con ${n} ${n === 1 ? "voce" : "voci"} tutte usano ${fmt(r.b[0])}–${fmt(r.b[1])}.`)
       : "Scrivi almeno un nome nella colonna <b>Voce</b>: le righe senza nome non vengono riempite.";
     $("goBtn").disabled = !n;
   }
@@ -653,7 +650,7 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
     const rows = namedRows();
     if (!rows.length) return;
     const b = bSet();
-    let count = 0;
+    let count = 0, fixed = 0;
     const list = monthsToFill();
     for (const k of list) {
       const last = k === curKey ? now.getDate() : daysIn(k);
@@ -663,7 +660,10 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
         const [lo, hi] = b.has(r.id) ? config.ranges.b : config.ranges.a;
         for (let d = 1; d <= last; d++) {
           if (config.overwrite || row[d] == null) { row[d] = rand(lo, hi); count++; }
+          else if (row[d] < lo || row[d] > hi) { row[d] = rand(lo, hi); fixed++; }
         }
+        // days after today in the current month are checked too, never filled
+        for (const d in row) if (+d > last && (row[d] < lo || row[d] > hi)) { row[d] = rand(lo, hi); fixed++; }
       }
       writeDoc(monthPath(k), m);
     }
@@ -671,7 +671,10 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
     writeDoc(cfgPath(), config);
     $("setScrim").hidden = true;
     viewKey = curKey; render();
-    toast(count ? `Fatto: ${count} valori inseriti (${list.length} ${list.length === 1 ? "foglio" : "fogli"}).` : "Nessuna casella vuota da riempire.");
+    const parts = [];
+    if (count) parts.push(`${count} valori inseriti`);
+    if (fixed) parts.push(`${fixed} corretti perché fuori fascia`);
+    toast(parts.length ? `Fatto: ${parts.join(", ")} (${list.length} ${list.length === 1 ? "foglio" : "fogli"}).` : "Tutto già compilato e nella fascia giusta.");
   };
 
   // months worth offering in pickers: from the earliest with data (or start month) to the latest
