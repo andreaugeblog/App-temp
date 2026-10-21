@@ -199,9 +199,8 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
 .s2 { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
 .s2-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: start; }
 .s2-month { display: flex; align-items: center; gap: 2px; }
-.s2-when { display: grid; text-align: center; min-width: 5.6em; line-height: 1.1; }
-.s2-when span:first-child { font-weight: 700; font-size: 1.15rem; }
-.s2-when span:last-child { font-family: var(--f-num); color: var(--muted); font-size: .9rem; margin-top: 2px; }
+/* month and year set like the month label of the first section */
+.s2-when { display: grid; text-align: center; min-width: 5.6em; line-height: 1.25; font-weight: 600; font-size: .95rem; }
 .s2 #s2Text {
   width: 100%; min-height: 4.8em; resize: vertical; font: inherit; line-height: 1.45; color: var(--ink);
   background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; overflow: hidden;
@@ -243,7 +242,7 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
 .s2 .c1.full { border-bottom: 0; }
 .s2 textarea.macro-title { resize: none; overflow: hidden; display: block; height: 100%; font-weight: inherit; font-size: inherit; text-align: center; padding: 9px 10px; line-height: 1.35; }
 
-@media (max-width: 420px) { .s2-when { min-width: 4.6em; } .s2-when span:first-child { font-size: 1rem; } }
+@media (max-width: 420px) { .s2-when { min-width: 4.6em; } }
 
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 60; background: var(--ink); color: var(--bg); padding: 11px 16px; border-radius: 10px; font-size: .9rem; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
 </style>
