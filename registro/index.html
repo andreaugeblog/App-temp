@@ -219,6 +219,11 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 .s2 .day.last { border-right: 0; }
 .s2 .day.gen { background: #fff1bf; color: #17222b; }
 .s2 .day.check { cursor: pointer; font-size: 1rem; }
+.vals { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 4px; }
+.vals .val { display: inline-flex; align-items: center; gap: 2px; padding: 4px 4px 4px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg); font-family: var(--f-num); font-size: .88rem; }
+.vals .val button { border: 0; background: none; width: 26px; height: 26px; border-radius: 50%; color: var(--muted); font-size: 1rem; line-height: 1; }
+.vals .val button:hover { color: var(--danger); background: var(--surface); }
+.vals .none { color: var(--muted); font-size: .88rem; }
 .offlist { display: grid; gap: 6px; }
 .offlist .offrow { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; padding: 6px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); font-size: .88rem; }
 .offlist .offrow i { width: 12px; height: 12px; border-radius: 3px; border: 1px solid var(--line); display: inline-block; }
@@ -369,6 +374,11 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     <h2 id="set3Title">Generar valores</h2>
     <p class="sub">Desde el día de inicio hasta hoy, en la columna 4. Cada color de la columna 2 marca cada cuánto se rellena su fila: una columna con valores y luego las vacías. Lo que ya hay en esas filas desde el día de inicio se borra y se genera de nuevo.</p>
     <label class="field"><span>Día de inicio</span><input type="date" id="g3Start" class="num" style="width:auto;text-align:left"></label>
+    <div class="field"><span>Valores generados</span>
+      <p class="sub" style="margin:0">Letras o letras con número. Cada casilla generada recibe uno de estos valores al azar.</p>
+      <div class="vals" id="g3Vals"></div>
+      <div class="inline"><input class="num" id="g3NewVal" maxlength="8" placeholder="Ej. B2" autocomplete="off" style="width:7em;text-align:left"><button class="ghost" id="g3AddVal">Añadir</button></div>
+    </div>
     <div class="field"><span>Filas</span><div class="summary" id="g3Rules" style="margin:0"></div></div>
     <div class="field"><span>Día del mes de las filas rojas</span>
       <div class="inline">1ª roja: día <input class="num" id="g3red1" inputmode="numeric" style="width:4em"></div>
@@ -720,25 +730,49 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   // Each colour of column 2 sets how often its rows of column 4 get a value: one column with
   // values, then the empty ones (blue every 7 days). Only the rows with a rule are generated.
   const LETTERS = ["A", "B", "C", "D", "E", "F", "G"];
+  // the values the generator draws from, edited in the settings (A–G until changed)
+  const vals3 = () => Array.isArray(config.vals3) ? config.vals3 : LETTERS;
+  const pickVal = () => pick(vals3());
+  function drawVals() {
+    const v = vals3();
+    $("g3Vals").innerHTML = v.length
+      ? v.map((x, i) => `<span class="val">${esc(x)}<button data-i="${i}" aria-label="Quitar ${esc(x)}">×</button></span>`).join("")
+      : '<span class="none">Sin valores: añade al menos uno para poder generar.</span>';
+  }
+  function addVal() {
+    const x = $("g3NewVal").value.trim().toUpperCase().replace(/\s+/g, "");
+    if (!x) return;
+    if (!/^[A-ZÑ]+\d*$/.test(x)) { toast("Usa letras, o letras seguidas de un número (por ejemplo B2)."); return; }
+    if (vals3().includes(x)) { toast(`“${x}” ya está en la lista.`); return; }
+    config.vals3 = [...vals3(), x];
+    $("g3NewVal").value = ""; drawVals(); summarize3(); saveConfig();
+  }
+  $("g3AddVal").onclick = addVal;
+  $("g3NewVal").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); addVal(); } });
+  $("g3Vals").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    config.vals3 = vals3().filter((_, i) => i !== +b.dataset.i);
+    drawVals(); summarize3(); saveConfig();
+  });
   const S3_GEN = {
-    3: { every: 7, make: () => pick(LETTERS) },
-    4: { every: 7, make: () => pick(LETTERS) },
-    5: { every: 7, make: () => pick(LETTERS) },
-    6: { every: 7, make: () => pick(LETTERS) },
-    7: { every: 7, make: () => pick(LETTERS) },
-    8: { every: 14, make: () => pick(LETTERS) },
-    9: { every: 14, make: () => pick(LETTERS) },
+    3: { every: 7, make: pickVal },
+    4: { every: 7, make: pickVal },
+    5: { every: 7, make: pickVal },
+    6: { every: 7, make: pickVal },
+    7: { every: 7, make: pickVal },
+    8: { every: 14, make: pickVal },
+    9: { every: 14, make: pickVal },
     // red rows: once a month, on the day chosen in the settings for each row
-    10: { monthly: "red1", make: () => pick(LETTERS) },
-    11: { monthly: "red2", make: () => pick(LETTERS) },
+    10: { monthly: "red1", make: pickVal },
+    11: { monthly: "red2", make: pickVal },
     // green row: every 3 months, counted from the start day's month, on its chosen day
-    12: { monthly: "green", months: 3, make: () => pick(LETTERS) }
+    12: { monthly: "green", months: 3, make: pickVal }
   };
   const S3_GEN_TEXT = {
-    7: "Filas azules (2ª–6ª): una columna con una letra de la A a la G, luego 6 vacías",
-    14: "Filas amarillas (7ª–8ª): una columna con una letra de la A a la G, luego 13 vacías",
-    m: "Filas rojas (9ª–10ª): una letra de la A a la G una vez al mes, el día elegido abajo (si el mes no tiene ese día, el último)",
-    q: "Fila verde (11ª): una letra de la A a la G cada 3 meses, el día elegido abajo, empezando por el mes del día de inicio"
+    7: "Filas azules (2ª–6ª): una columna con un valor de la lista, luego 6 vacías",
+    14: "Filas amarillas (7ª–8ª): una columna con un valor de la lista, luego 13 vacías",
+    m: "Filas rojas (9ª–10ª): un valor de la lista una vez al mes, el día elegido abajo (si el mes no tiene ese día, el último)",
+    q: "Fila verde (11ª): un valor de la lista cada 3 meses, el día elegido abajo, empezando por el mes del día de inicio"
   };
   // rows switched off in the settings: dark, values hidden (kept); with a date only from that day
   const S3_ROW_NAMES = { 3: "2ª", 4: "3ª", 5: "4ª", 6: "5ª", 7: "6ª", 8: "7ª", 9: "8ª", 10: "9ª", 11: "10ª", 12: "11ª" };
@@ -790,13 +824,13 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     $("g3Summary").innerHTML = on.length
       ? `Rellenará <b>${days} ${days === 1 ? "día" : "días"}</b> desde el <b>${+g.start.slice(8)} de ${label(g.start.slice(0, 7))}</b> hasta hoy.`
       : "El día de inicio es posterior a hoy: no hay nada que rellenar todavía.";
-    $("g3Go").disabled = !on.length;
+    $("g3Go").disabled = !on.length || !vals3().length;
   }
   function openSettings3() {
     const g = Object.assign(g3Defaults(), config.gen3 || {});
     $("g3Start").value = g.start; $("g3red1").value = g.red1; $("g3red2").value = g.red2; $("g3green").value = g.green;
     $("g3Rules").innerHTML = Object.values(S3_GEN_TEXT).join("<br>");
-    drawOffList();
+    drawOffList(); drawVals();
     summarize3();
     $("set3Scrim").hidden = false;
   }
