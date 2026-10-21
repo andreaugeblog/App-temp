@@ -632,16 +632,19 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
   // cell (same height as the right title), rows 2–13 the 12 rows. Groups: [first grid row, rows spanned];
   // a merged cell gets its own outline.
   const LEFT = [
-    { key: "c1", col: 1, top: 0, groups: [[1, 2]] },
-    { key: "c1b", col: 2, top: 2, groups: [[1, 2]] }
+    { key: "c1", col: 1, top: 0, groups: [[1, 2], [3, 3]] },
+    { key: "c1b", col: 2, top: 2, groups: [[1, 2], [3, 1], [4, 1], [5, 1]] }
   ];
   function buildS2Table() {
     let h = '<input id="macro1" data-t="1" class="macro-title" style="grid-area:1/3" aria-label="Titolo macro colonna destra">';
     for (const c of LEFT) {
+      let prevBoxed = false;
       for (let r = 1; r <= 13; ) {
         const g = c.groups.find(x => x[0] === r);
         const span = g ? g[1] : 1;
-        const cls = "c1" + (g ? " boxed" : "") + (g && r === 1 ? " at-top" : "");
+        // an outlined cell draws its bottom line, and its top line only when the cell above has none
+        const cls = "c1" + (g ? " boxed" : "") + (g && (r === 1 || prevBoxed) ? " at-top" : "");
+        prevBoxed = !!g;
         const pos = `grid-row:${r}/span ${span};grid-column:${c.col}`;
         h += r === 1
           ? `<textarea id="macro${c.top}" data-t="${c.top}" class="${cls} macro-title left" rows="1" style="${pos}" aria-label="Colonna ${c.col}, in alto"></textarea>`
