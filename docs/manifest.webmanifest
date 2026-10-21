@@ -1,8 +1,8 @@
 {
-  "name": "Registro Mensile",
+  "name": "Registro Mensual",
   "short_name": "Registro",
-  "description": "Registro mensile con voci, giorni 1-31 ed esportazione Excel.",
-  "lang": "it",
+  "description": "Registro mensual con elementos, días 1-31 y exportación a Excel.",
+  "lang": "es",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -16,7 +16,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 SRC = ROOT / "registro" / "index.html"
 OUT = ROOT / "docs"
 
-NAME = "Registro Mensile"
+NAME = "Registro Mensual"
 
 src = SRC.read_text(encoding="utf-8")
 # title and the artifact-only meta move into the generated <head>
@@ -26,12 +26,12 @@ body = re.sub(r'<meta name="claude:viewport-fit-sides"[^>]*>\s*', "", body, coun
 version = hashlib.sha256((src + (OUT / "xlsx.full.min.js").read_text(encoding="utf-8")[:2000]).encode()).hexdigest()[:10]
 
 head = f"""<!doctype html>
-<html lang="it">
+<html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>{NAME}</title>
-<meta name="description" content="Registro mensile con voci, giorni 1-31, generazione valori ed esportazione Excel.">
+<meta name="description" content="Registro mensual con elementos, días 1-31, generación de valores y exportación a Excel.">
 <meta name="theme-color" content="#eef2f5" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0e1418" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -68,8 +68,8 @@ OUT.mkdir(exist_ok=True)
 manifest = {
     "name": NAME,
     "short_name": "Registro",
-    "description": "Registro mensile con voci, giorni 1-31 ed esportazione Excel.",
-    "lang": "it",
+    "description": "Registro mensual con elementos, días 1-31 y exportación a Excel.",
+    "lang": "es",
     "start_url": "./",
     "scope": "./",
     "display": "standalone",

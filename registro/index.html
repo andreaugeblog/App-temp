@@ -1,4 +1,4 @@
-<title>Registro Mensile</title>
+<title>Registro Mensual</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -105,7 +105,7 @@ td.off { background: repeating-linear-gradient(135deg, var(--off) 0 4px, transpa
 td.off input { visibility: hidden; }
 .is-today { background: var(--today); }
 thead th.is-today { color: var(--accent); font-weight: 600; }
-tr.b th.name .name-in::after { content: "fascia 2"; display: block; font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; color: var(--warm); margin-top: 2px; }
+tr.b th.name .name-in::after { content: "franja 2"; display: block; font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; color: var(--warm); margin-top: 2px; }
 tr.b th.name .name-in:empty::after { display: none; }
 
 .under { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
@@ -212,29 +212,29 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
 </style>
 
 <header class="bar">
-  <h1>Registro Mensile<small id="sheetLabel">Sezione numeri</small></h1>
+  <h1>Registro Mensual<small id="sheetLabel">Sección números</small></h1>
   <div class="menu-wrap">
-    <button class="dots" id="dotsBtn" aria-label="Menu" aria-haspopup="true" aria-expanded="false">
+    <button class="dots" id="dotsBtn" aria-label="Menú" aria-haspopup="true" aria-expanded="false">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
     </button>
     <div class="menu" id="menu" hidden>
-      <button id="openSettings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Impostazioni</button>
-      <button id="openExport"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 17v3h16v-3"/></svg>Esporta</button>
-      <button id="openImport"><svg viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M4 17v3h16v-3"/></svg>Importa</button>
-      <button id="openDelete" class="danger"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>Elimina</button>
-      <button id="goToday"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Vai al mese corrente</button>
+      <button id="openSettings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Ajustes</button>
+      <button id="openExport"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 17v3h16v-3"/></svg>Exportar</button>
+      <button id="openImport"><svg viewBox="0 0 24 24"><path d="M12 15V3M7 8l5-5 5 5M4 17v3h16v-3"/></svg>Importar</button>
+      <button id="openDelete" class="danger"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>Eliminar</button>
+      <button id="goToday"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Ir al mes actual</button>
     </div>
   </div>
 </header>
 
-<nav class="secs" id="secs" aria-label="Sezioni"></nav>
+<nav class="secs" id="secs" aria-label="Secciones"></nav>
 
 <div class="sechead">
-  <input id="secName" class="secname" placeholder="Nome della sezione" autocomplete="off" aria-label="Nome della sezione">
+  <input id="secName" class="secname" placeholder="Nombre de la sección" autocomplete="off" aria-label="Nombre de la sección">
   <div class="month">
-    <button class="icon-btn" id="prevM" aria-label="Mese precedente">&#8249;</button>
+    <button class="icon-btn" id="prevM" aria-label="Mes anterior">&#8249;</button>
     <b id="monthName"></b>
-    <button class="icon-btn" id="nextM" aria-label="Mese successivo">&#8250;</button>
+    <button class="icon-btn" id="nextM" aria-label="Mes siguiente">&#8250;</button>
   </div>
 </div>
 
@@ -244,11 +244,11 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
 <section class="s2" id="s2" hidden>
   <div class="s2-head">
     <div class="s2-month">
-      <button class="icon-btn" id="prev2" aria-label="Mese precedente">&#8249;</button>
+      <button class="icon-btn" id="prev2" aria-label="Mes anterior">&#8249;</button>
       <div class="s2-when"><span id="s2M"></span><span id="s2Y"></span></div>
-      <button class="icon-btn" id="next2" aria-label="Mese successivo">&#8250;</button>
+      <button class="icon-btn" id="next2" aria-label="Mes siguiente">&#8250;</button>
     </div>
-    <textarea id="s2Text" rows="3" placeholder="Scrivi qui…" aria-label="Testo del mese"></textarea>
+    <textarea id="s2Text" rows="3" placeholder="Escribe aquí…" aria-label="Texto del mes"></textarea>
   </div>
   <div class="s2-scroll">
     <div class="s2-table" id="s2Table"></div>
@@ -256,108 +256,108 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
 </section>
 
 <div class="under">
-  <button class="ghost" id="addRow">+ Aggiungi voce</button>
-  <button class="ghost" id="delRow">− Togli ultima voce</button>
+  <button class="ghost" id="addRow">+ Añadir elemento</button>
+  <button class="ghost" id="delRow">− Quitar último elemento</button>
   <div class="legend">
-    <span><i style="background:var(--cold)"></i>Voci normali</span>
-    <span><i style="background:var(--warm)"></i>Ultime due voci (fascia 2)</span>
+    <span><i style="background:var(--cold)"></i>Elementos normales</span>
+    <span><i style="background:var(--warm)"></i>Dos últimos elementos (franja 2)</span>
   </div>
 </div>
-<p class="status" id="status">Caricamento…</p>
+<p class="status" id="status">Cargando…</p>
 
 <!-- PIN -->
 <div class="scrim" id="pinScrim" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="pinTitle">
-    <h2 id="pinTitle">Impostazioni</h2>
-    <p class="sub">Inserisci il PIN per continuare.</p>
+    <h2 id="pinTitle">Ajustes</h2>
+    <p class="sub">Introduce el PIN para continuar.</p>
     <div class="pin-dots" id="pinDots"><span></span><span></span><span></span><span></span></div>
     <div class="pin-err" id="pinErr"></div>
     <div class="keypad" id="keypad">
       <button>1</button><button>2</button><button>3</button>
       <button>4</button><button>5</button><button>6</button>
       <button>7</button><button>8</button><button>9</button>
-      <button class="blank" tabindex="-1" aria-hidden="true"></button><button>0</button><button data-k="del" aria-label="Cancella">&#9003;</button>
+      <button class="blank" tabindex="-1" aria-hidden="true"></button><button>0</button><button data-k="del" aria-label="Borrar">&#9003;</button>
     </div>
-    <div class="row-x"><button class="link" id="pinCancel">Annulla</button></div>
+    <div class="row-x"><button class="link" id="pinCancel">Cancelar</button></div>
   </div>
 </div>
 
 <!-- Settings -->
 <div class="scrim" id="setScrim" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="setTitle">
-    <h2 id="setTitle">Generazione valori</h2>
-    <p class="sub">Riempie i fogli dal mese di inizio fino a oggi.</p>
-    <label class="field"><span>Mese di inizio</span>
+    <h2 id="setTitle">Generar valores</h2>
+    <p class="sub">Rellena las hojas desde el mes de inicio hasta hoy.</p>
+    <label class="field"><span>Mes de inicio</span>
       <div class="inline"><select id="startMonth"></select><select id="startYear"></select></div>
     </label>
-    <div class="field"><span>Voci normali</span>
-      <div class="inline">da <input class="num" id="aMin" inputmode="decimal"> a <input class="num" id="aMax" inputmode="decimal"></div>
+    <div class="field"><span>Elementos normales</span>
+      <div class="inline">de <input class="num" id="aMin" inputmode="decimal"> a <input class="num" id="aMax" inputmode="decimal"></div>
     </div>
-    <div class="field"><span>Ultime due voci</span>
-      <div class="inline">da <input class="num" id="bMin" inputmode="decimal"> a <input class="num" id="bMax" inputmode="decimal"></div>
+    <div class="field"><span>Dos últimos elementos</span>
+      <div class="inline">de <input class="num" id="bMin" inputmode="decimal"> a <input class="num" id="bMax" inputmode="decimal"></div>
     </div>
-    <label class="check"><input type="checkbox" id="overwrite"> Sovrascrivi anche le caselle già compilate</label>
-    <div class="field"><span>Quando cambiano le ultime due voci, aggiorna</span>
+    <label class="check"><input type="checkbox" id="overwrite"> Sobrescribir también las casillas ya rellenadas</label>
+    <div class="field"><span>Cuando cambian los dos últimos elementos, actualizar</span>
       <div class="opts blue" id="raOpts">
-        <label><span class="head"><input type="radio" name="raMode" value="month"> Solo il mese corrente</span></label>
-        <label><span class="head"><input type="radio" name="raMode" value="from"> Da un mese fino a oggi</span>
-          <span class="inline">da <select id="raFromOnly"></select></span></label>
-        <label><span class="head"><input type="radio" name="raMode" value="range"> Da un mese a un altro</span>
-          <span class="inline">da <select id="raFrom"></select> a <select id="raTo"></select></span></label>
-        <label><span class="head"><input type="radio" name="raMode" value="all"> Tutti i mesi</span></label>
+        <label><span class="head"><input type="radio" name="raMode" value="month"> Solo el mes actual</span></label>
+        <label><span class="head"><input type="radio" name="raMode" value="from"> De un mes hasta hoy</span>
+          <span class="inline">de <select id="raFromOnly"></select></span></label>
+        <label><span class="head"><input type="radio" name="raMode" value="range"> De un mes a otro</span>
+          <span class="inline">de <select id="raFrom"></select> a <select id="raTo"></select></span></label>
+        <label><span class="head"><input type="radio" name="raMode" value="all"> Todos los meses</span></label>
       </div>
     </div>
     <div class="summary" id="summary"></div>
-    <button class="go" id="goBtn">Vai pure</button>
-    <div class="row-x"><button class="link" id="setClose">Chiudi</button></div>
+    <button class="go" id="goBtn">Adelante</button>
+    <div class="row-x"><button class="link" id="setClose">Cerrar</button></div>
   </div>
 </div>
 
 <!-- Import -->
 <div class="scrim" id="impScrim" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="impTitle">
-    <h2 id="impTitle">Importa</h2>
-    <p class="sub">Carica un file Excel (anche scaricato da Google Fogli). Ogni foglio chiamato come un mese, per esempio "Maggio 2026", va nel mese corrispondente.</p>
-    <label class="file" id="impDrop"><input type="file" id="impFile" accept=".xlsx,.xls,.ods,.csv"><b>Scegli il file</b><span id="impFileName">.xlsx, .xls, .ods o .csv</span></label>
+    <h2 id="impTitle">Importar</h2>
+    <p class="sub">Carga un archivio Excel (también descargado de Hojas de cálculo de Google). Cada hoja con el nombre de un mes, por ejemplo "Mayo 2026", va al mes correspondiente.</p>
+    <label class="file" id="impDrop"><input type="file" id="impFile" accept=".xlsx,.xls,.ods,.csv"><b>Elige el archivo</b><span id="impFileName">.xlsx, .xls, .ods o .csv</span></label>
     <div class="mlist" id="impList" hidden></div>
-    <label class="field" id="impSecWrap" hidden><span>Importa nella sezione</span><select id="impSec"></select></label>
-    <p class="sub" id="impNote" hidden>I mesi importati sostituiscono i valori già presenti in quei mesi. Le voci vengono abbinate per nome; quelle nuove si aggiungono in fondo.</p>
-    <button class="go" id="impGo" disabled>Importa</button>
-    <div class="row-x"><button class="link" id="impClose">Chiudi</button></div>
+    <label class="field" id="impSecWrap" hidden><span>Importar en la sección</span><select id="impSec"></select></label>
+    <p class="sub" id="impNote" hidden>Los meses importados sustituyen los valores que ya hay en esos meses. Los elementos se emparejan por nombre; los nuevos se añaden al final.</p>
+    <button class="go" id="impGo" disabled>Importar</button>
+    <div class="row-x"><button class="link" id="impClose">Cerrar</button></div>
   </div>
 </div>
 
 <!-- Delete -->
 <div class="scrim" id="delScrim" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="delTitle">
-    <h2 id="delTitle">Elimina</h2>
-    <p class="sub">Cancella i valori inseriti. Non si può annullare: esporta prima un file se vuoi tenerne una copia.</p>
+    <h2 id="delTitle">Eliminar</h2>
+    <p class="sub">Borra los valores introducidos. No se puede deshacer: exporta antes un archivo si quieres guardar una copia.</p>
     <div class="opts">
       <label><span class="head"><input type="radio" name="delMode" value="month" checked> Solo <span id="delCur"></span></span></label>
-      <label><span class="head"><input type="radio" name="delMode" value="range"> Da un mese a un altro</span>
-        <span class="inline">da <select id="delFrom"></select> a <select id="delTo"></select></span></label>
-      <label><span class="head"><input type="radio" name="delMode" value="all"> Elimina tutto</span>
-        <span class="inline"><input type="checkbox" id="delNames" style="width:18px;height:18px;accent-color:var(--danger)"> Cancella anche i nomi delle voci</span></label>
-      <label id="delSecOpt"><span class="head"><input type="radio" name="delMode" value="section"> Elimina l'intera sezione “<span id="delSecName"></span>”</span></label>
+      <label><span class="head"><input type="radio" name="delMode" value="range"> De un mes a otro</span>
+        <span class="inline">de <select id="delFrom"></select> a <select id="delTo"></select></span></label>
+      <label><span class="head"><input type="radio" name="delMode" value="all"> Eliminar todo</span>
+        <span class="inline"><input type="checkbox" id="delNames" style="width:18px;height:18px;accent-color:var(--danger)"> Borrar también los nombres de los elementos</span></label>
+      <label id="delSecOpt"><span class="head"><input type="radio" name="delMode" value="section"> Eliminar toda la sección “<span id="delSecName"></span>”</span></label>
     </div>
     <div class="summary" id="delSummary"></div>
-    <button class="go red" id="delGo">Elimina</button>
-    <div class="row-x"><button class="link" id="delClose">Chiudi</button></div>
+    <button class="go red" id="delGo">Eliminar</button>
+    <div class="row-x"><button class="link" id="delClose">Cerrar</button></div>
   </div>
 </div>
 
 <!-- Export -->
 <div class="scrim" id="expScrim" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="expTitle">
-    <h2 id="expTitle">Esporta</h2>
-    <p class="sub">Scegli i mesi: ogni mese diventa un foglio del file Excel, che si apre anche con Google Fogli.</p>
+    <h2 id="expTitle">Exportar</h2>
+    <p class="sub">Elige los meses: cada mes se convierte en una hoja del archivo Excel, que también se abre con Hojas de cálculo de Google.</p>
     <div class="inline" style="margin-bottom:10px">
-      <button class="link" id="expAll">Seleziona tutti</button>
-      <button class="link" id="expNone">Nessuno</button>
+      <button class="link" id="expAll">Seleccionar todos</button>
+      <button class="link" id="expNone">Ninguno</button>
     </div>
     <div class="mlist" id="expList"></div>
-    <button class="go" id="expGo">Esporta in Excel</button>
-    <div class="row-x"><button class="link" id="expClose">Chiudi</button></div>
+    <button class="go" id="expGo">Exportar a Excel</button>
+    <div class="row-x"><button class="link" id="expClose">Cerrar</button></div>
   </div>
 </div>
 
@@ -366,7 +366,9 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
 <script>
 (() => {
   const PIN = "8872";
-  const MESI = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
+  const MESI = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+  // month names also recognised when importing files exported before the app was in Spanish
+  const MESI_IT = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
   const LS = "registro-mensile-v1";
   const $ = id => document.getElementById(id);
 
@@ -449,9 +451,9 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     chains[path] = (chains[path] || Promise.resolve())
       .then(() => db.doc(path).set(body))
       .catch(err => {
-        if (err && err.code === "invalid_argument") toast("Non hai i permessi per salvare le modifiche.");
-        else if (err && err.code === "quota_exceeded") toast("Spazio di salvataggio esaurito.");
-        else toast("Salvataggio non riuscito, riprova.");
+        if (err && err.code === "invalid_argument") toast("No tienes permiso para guardar los cambios.");
+        else if (err && err.code === "quota_exceeded") toast("Espacio de almacenamiento agotado.");
+        else toast("No se ha podido guardar, inténtalo de nuevo.");
       });
     return chains[path];
   }
@@ -460,7 +462,7 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     if (!db) return Promise.resolve();
     chains[path] = (chains[path] || Promise.resolve())
       .then(() => db.doc(path).delete())
-      .catch(() => toast("Eliminazione non riuscita, riprova."));
+      .catch(() => toast("No se ha podido eliminar, inténtalo de nuevo."));
     return chains[path];
   }
   const timers = {}, pending = {};
@@ -515,15 +517,15 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     saveConfig();
     refresh();
     const parts = [];
-    if (added) parts.push(`${added} valori aggiunti`);
-    if (changed) parts.push(`${changed} convertiti`);
-    if (parts.length) toast(`Voci aggiornate: ${parts.join(", ")}.`);
+    if (added) parts.push(`${added} valores añadidos`);
+    if (changed) parts.push(`${changed} convertidos`);
+    if (parts.length) toast(`Elementos actualizados: ${parts.join(", ")}.`);
   }
   const queueReassign = (ms = 1200) => later("reassign", checkReassign, ms);
 
   function render() {
     document.body.dataset.type = sec().type;
-    $("sheetLabel").textContent = sec().type === "s2" ? "Seconda sezione" : "Sezione numeri";
+    $("sheetLabel").textContent = sec().type === "s2" ? "Segunda sección" : "Sección números";
     $("s2").hidden = sec().type !== "s2";
     if (sec().type === "s2") { renderS2(); return; }
     const nDays = daysIn(viewKey);
@@ -533,15 +535,15 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     const b = bSet();
     $("monthName").textContent = label(viewKey);
 
-    let h = '<thead><tr><th class="corner sticky">Voce</th>';
+    let h = '<thead><tr><th class="corner sticky">Elemento</th>';
     for (let d = 1; d <= 31; d++) h += `<th class="day${isCur && d === today ? " is-today" : ""}">${d}</th>`;
     h += "</tr></thead><tbody>";
     config.rows.forEach((r, i) => {
-      h += `<tr data-row="${r.id}"${b.has(r.id) ? ' class="b"' : ""}><th class="name sticky"><div class="name-in" contenteditable="true" spellcheck="false" data-ph="Nome ${i + 1}" id="n-${r.id}"></div></th>`;
+      h += `<tr data-row="${r.id}"${b.has(r.id) ? ' class="b"' : ""}><th class="name sticky"><div class="name-in" contenteditable="true" spellcheck="false" data-ph="Nombre ${i + 1}" id="n-${r.id}"></div></th>`;
       for (let d = 1; d <= 31; d++) {
         const off = d > nDays;
         const v = cells[r.id] && cells[r.id][d];
-        h += `<td class="cell${off ? " off" : ""}${isCur && d === today ? " is-today" : ""}"><input id="c-${r.id}-${d}" data-d="${d}" inputmode="decimal" autocomplete="off" aria-label="${r.name || "Voce " + (i + 1)}, giorno ${d}" value="${off ? "" : fmt(v)}"${off ? " disabled" : ""}></td>`;
+        h += `<td class="cell${off ? " off" : ""}${isCur && d === today ? " is-today" : ""}"><input id="c-${r.id}-${d}" data-d="${d}" inputmode="decimal" autocomplete="off" aria-label="${r.name || "Elemento " + (i + 1)}, día ${d}" value="${off ? "" : fmt(v)}"${off ? " disabled" : ""}></td>`;
       }
       h += "</tr>";
     });
@@ -610,11 +612,11 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     const hasData = Object.values(months).some(m => m.cells && m.cells[last.id] && Object.keys(m.cells[last.id]).length);
     if ((last.name.trim() || hasData) && $("delRow").dataset.armed !== "1") {
       $("delRow").dataset.armed = "1";
-      $("delRow").textContent = "Tocca di nuovo per togliere “" + (last.name.trim() || "ultima voce") + "”";
-      setTimeout(() => { $("delRow").dataset.armed = ""; $("delRow").textContent = "− Togli ultima voce"; }, 3500);
+      $("delRow").textContent = "Toca otra vez para quitar “" + (last.name.trim() || "último elemento") + "”";
+      setTimeout(() => { $("delRow").dataset.armed = ""; $("delRow").textContent = "− Quitar último elemento"; }, 3500);
       return;
     }
-    $("delRow").dataset.armed = ""; $("delRow").textContent = "− Togli ultima voce";
+    $("delRow").dataset.armed = ""; $("delRow").textContent = "− Quitar último elemento";
     config.rows.pop(); render(); saveConfig(); checkReassign();
   };
 
@@ -669,7 +671,7 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     "#b8e0d2", "#f6c6a8", "#c7c4f2", "#f2e6a0", "#a9d6f5", "#f5b8c8", "#cde8a6", "#e8c4e8"];
   function buildS2Table() {
     let tint = 0;
-    let h = '<input id="macro1" data-t="1" class="macro-title stickv" style="grid-area:1/3/2/-1;width:50cqw;left:50cqw" aria-label="Titolo macro colonna destra">';
+    let h = '<input id="macro1" data-t="1" class="macro-title stickv" style="grid-area:1/3/2/-1;width:50cqw;left:50cqw" aria-label="Título de la macrocolumna derecha">';
     const boxedAt = {};   // "col:row" -> the cell ending on that row has a bottom line
     for (const band of BANDS) {
       band.cols.forEach((c, ci) => {
@@ -687,8 +689,8 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
           if (g) { if (band.split) boxedAt[(ci + 1) + ":" + (r + span - 1)] = true; else { boxedAt["1:" + (r + span - 1)] = boxedAt["2:" + (r + span - 1)] = true; } }
           const pos = `grid-row:${r}/span ${span};grid-column:${col}${extra}` + (g ? `;background:${TINTS[tint++ % TINTS.length]};color:#17222b` : "");
           h += r === 1
-            ? `<textarea id="macro${c.top}" data-t="${c.top}" class="${cls} ${stick} macro-title left" rows="1" style="${pos}" aria-label="Colonna sinistra, in alto"></textarea>`
-            : `<textarea id="${c.key}-${r - 2}" data-i="${r - 2}" data-k="${c.key}" class="${cls} ${stick}" rows="1" style="${pos}" aria-label="Colonna sinistra, riga ${r - 1}"></textarea>`;
+            ? `<textarea id="macro${c.top}" data-t="${c.top}" class="${cls} ${stick} macro-title left" rows="1" style="${pos}" aria-label="Columna izquierda, arriba"></textarea>`
+            : `<textarea id="${c.key}-${r - 2}" data-i="${r - 2}" data-k="${c.key}" class="${cls} ${stick}" rows="1" style="${pos}" aria-label="Columna izquierda, fila ${r - 1}"></textarea>`;
           r += span;
         }
       });
@@ -697,7 +699,7 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
       const pos = `grid-row:${r};grid-column:${d + 2}`, last = d === 31 ? " last" : "";
       h += NUMBER_ROWS.includes(r)
         ? `<div class="day dnum${last}" style="${pos}">${d}</div>`
-        : `<input id="d${r}-${d - 1}" data-i="${d - 1}" data-k="d${r}" size="1" inputmode="decimal" class="day${last}" style="${pos}" aria-label="Riga ${r}, giorno ${d}">`;
+        : `<input id="d${r}-${d - 1}" data-i="${d - 1}" data-k="d${r}" size="1" inputmode="decimal" class="day${last}" style="${pos}" aria-label="Fila ${r}, día ${d}">`;
     }
     $("s2Table").innerHTML = h;
   }
@@ -759,7 +761,7 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
       else {
         const p = $("pinScrim").querySelector(".panel");
         p.classList.remove("shake"); void p.offsetWidth; p.classList.add("shake");
-        $("pinErr").textContent = "PIN errato, riprova.";
+        $("pinErr").textContent = "PIN incorrecto, inténtalo de nuevo.";
         setTimeout(() => { pin = ""; drawPin(); }, 350);
       }
     }
@@ -819,11 +821,11 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     readSettings();
     const n = namedRows().length;
     const list = monthsToFill();
-    const range = list.length > 1 ? `da <b>${label(list[0])}</b> a <b>${now.getDate()} ${label(curKey)}</b>` : `dal 1 al <b>${now.getDate()} ${label(curKey)}</b>`;
+    const range = list.length > 1 ? `de <b>${label(list[0])}</b> al <b>${now.getDate()} de ${label(curKey)}</b>` : `del 1 al <b>${now.getDate()} de ${label(curKey)}</b>`;
     const r = config.ranges;
     $("summary").innerHTML = n
-      ? `Riempirà ${range} per <b>${n} ${n === 1 ? "voce" : "voci"}</b> e correggerà i valori fuori fascia.<br>Valori tra ${fmt(r.a[0])} e ${fmt(r.a[1])}` + (n > 2 ? `, ultime due tra ${fmt(r.b[0])} e ${fmt(r.b[1])}.` : `; con ${n} ${n === 1 ? "voce" : "voci"} tutte usano ${fmt(r.b[0])}–${fmt(r.b[1])}.`)
-      : "Scrivi almeno un nome nella colonna <b>Voce</b>: le righe senza nome non vengono riempite.";
+      ? `Rellenará ${range} para <b>${n} ${n === 1 ? "elemento" : "elementos"}</b> y corregirá los valores fuera de franja.<br>Valores entre ${fmt(r.a[0])} y ${fmt(r.a[1])}` + (n > 2 ? `, los dos últimos entre ${fmt(r.b[0])} y ${fmt(r.b[1])}.` : `; con ${n} ${n === 1 ? "elemento" : "elementos"} todos usan ${fmt(r.b[0])}–${fmt(r.b[1])}.`)
+      : "Escribe al menos un nombre en la columna <b>Elemento</b>: las filas sin nombre no se rellenan.";
     $("goBtn").disabled = !n;
   }
   ["startMonth", "startYear", "aMin", "aMax", "bMin", "bMax", "overwrite"].forEach(id => $(id).addEventListener("input", () => { summarize(); saveConfig(); }));
@@ -865,9 +867,9 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     $("setScrim").hidden = true;
     viewKey = curKey; render();
     const parts = [];
-    if (count) parts.push(`${count} valori inseriti`);
-    if (fixed) parts.push(`${fixed} corretti perché fuori fascia`);
-    toast(parts.length ? `Fatto: ${parts.join(", ")} (${list.length} ${list.length === 1 ? "foglio" : "fogli"}).` : "Tutto già compilato e nella fascia giusta.");
+    if (count) parts.push(`${count} valores introducidos`);
+    if (fixed) parts.push(`${fixed} corregidos por estar fuera de franja`);
+    toast(parts.length ? `Hecho: ${parts.join(", ")} (${list.length} ${list.length === 1 ? "hoja" : "hojas"}).` : "Todo ya está relleno y en la franja correcta.");
   };
 
   // months worth offering in pickers: from the earliest with data (or start month) to the latest
@@ -893,14 +895,14 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     const t = delTargets();
     const n = t.reduce((s, k) => s + filled(k), 0);
     const sheets = t.filter(filled).length;
-    let txt = n ? `Verranno cancellati <b>${n} valori</b> in <b>${sheets} ${sheets === 1 ? "foglio" : "fogli"}</b>.` : "Non ci sono valori da cancellare qui.";
-    if (mode === "all" && $("delNames").checked) txt += " Anche i nomi delle voci verranno cancellati.";
-    if (mode === "section") txt = `La sezione “${secTitle()}” sparisce con le sue voci e ${n} valori.`;
+    let txt = n ? `Se borrarán <b>${n} valores</b> en <b>${sheets} ${sheets === 1 ? "hoja" : "hojas"}</b>.` : "Aquí no hay valores que borrar.";
+    if (mode === "all" && $("delNames").checked) txt += " También se borrarán los nombres de los elementos.";
+    if (mode === "section") txt = `La sección “${secTitle()}” desaparece con sus elementos y ${n} valores.`;
     $("delSummary").innerHTML = txt;
     $("delGo").disabled = !n && !(mode === "all" && $("delNames").checked) && mode !== "section";
     disarmDel();
   }
-  function disarmDel() { $("delGo").dataset.armed = ""; $("delGo").textContent = "Elimina"; }
+  function disarmDel() { $("delGo").dataset.armed = ""; $("delGo").textContent = "Eliminar"; }
   function openDelete() {
     const span = monthSpan();
     const opts = span.map(k => `<option value="${k}">${label(k)}</option>`).join("");
@@ -923,7 +925,7 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
   $("delClose").onclick = () => { $("delScrim").hidden = true; };
   $("delGo").onclick = () => {
     if ($("delGo").dataset.armed !== "1") {
-      $("delGo").dataset.armed = "1"; $("delGo").textContent = "Tocca di nuovo per confermare";
+      $("delGo").dataset.armed = "1"; $("delGo").textContent = "Toca otra vez para confirmar";
       return;
     }
     const mode = document.querySelector('input[name="delMode"]:checked').value;
@@ -938,7 +940,7 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
       writeDoc("registro/sezioni", { list: sections });
       $("delScrim").hidden = true;
       switchSection(sections[0].id, true);
-      toast(`Sezione “${name}” eliminata.`);
+      toast(`Sección “${name}” eliminada.`);
       return;
     }
     if (mode === "all" && $("delNames").checked) {
@@ -948,7 +950,7 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     }
     saveLocal();
     $("delScrim").hidden = true; render();
-    toast(mode === "month" ? `${label(viewKey)} svuotato.` : mode === "all" ? "Tutto eliminato." : "Mesi eliminati.");
+    toast(mode === "month" ? `${label(viewKey)} vaciado.` : mode === "all" ? "Todo eliminado." : "Meses eliminados.");
   };
 
   // ---- import ----
@@ -963,7 +965,8 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     const t = name.toLowerCase().trim();
     let m = t.match(/([a-zà]{3,})\.?\s*[-_/ ]?\s*'?(\d{4}|\d{2})\b/);
     if (m) {
-      const i = MESI.findIndex(x => x.toLowerCase().startsWith(m[1].slice(0, 3)));
+      let i = MESI.findIndex(x => x.toLowerCase().startsWith(m[1].slice(0, 3)));
+      if (i < 0) i = MESI_IT.findIndex(x => x.toLowerCase().startsWith(m[1].slice(0, 3)));
       const y = m[2].length === 2 ? 2000 + +m[2] : +m[2];
       if (i >= 0) return mk(y, i);
     }
@@ -997,30 +1000,30 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
       const wb = XLSX.read(await f.arrayBuffer(), { type: "array" });
       fileTitle = String((wb.Props && wb.Props.Title) || "").trim();
       parsed = wb.SheetNames.map(n => ({ sheet: n, key: sheetMonth(n), rows: readSheet(XLSX, wb.Sheets[n]) })).filter(p => p.rows && p.rows.length);
-      if (!parsed.length) { $("impList").hidden = false; $("impList").innerHTML = '<p class="empty">Nel file non ho trovato una riga con i giorni 1, 2, 3… e i nomi nella colonna a sinistra.</p>'; $("impGo").disabled = true; return; }
+      if (!parsed.length) { $("impList").hidden = false; $("impList").innerHTML = '<p class="empty">No he encontrado en el archivo una fila con los días 1, 2, 3… y los nombres en la columna de la izquierda.</p>'; $("impGo").disabled = true; return; }
       const span = monthSpan(); for (let k = shift(span[0], -24); k < span[0]; k = shift(k, 1)) span.unshift(k);
       const choices = [...new Set([...span, ...parsed.map(p => p.key).filter(Boolean)])].sort().reverse();
       $("impList").innerHTML = parsed.map((p, i) => {
         const n = p.rows.reduce((s, r) => s + Object.keys(r.vals).length, 0);
         const sel = `<select data-i="${i}">${choices.map(k => `<option value="${k}"${k === (p.key || viewKey) ? " selected" : ""}>${label(k)}</option>`).join("")}</select>`;
-        return `<label><input type="checkbox" data-i="${i}" checked><span>${p.key ? "" : `<small style="color:var(--muted)">“${p.sheet}” →</small> `}${sel}</span><span class="cnt">${p.rows.length} voci · ${n} valori</span></label>`;
+        return `<label><input type="checkbox" data-i="${i}" checked><span>${p.key ? "" : `<small style="color:var(--muted)">“${p.sheet}” →</small> `}${sel}</span><span class="cnt">${p.rows.length} elementos · ${n} valores</span></label>`;
       }).join("");
       // which section receives the file: same name, else this one if still empty, else a new one
       const low = fileTitle.toLowerCase();
       const same = low && sections.find(x => (x.name || "").trim().toLowerCase() === low);
-      $("impSec").innerHTML = sections.map(x => `<option value="${x.id}">${esc((x.name || "").trim() || "Sezione senza nome")}</option>`).join("");
+      $("impSec").innerHTML = sections.map(x => `<option value="${x.id}">${esc((x.name || "").trim() || "Sección sin nombre")}</option>`).join("");
       $("impSec").value = same ? same.id : active;
       $("impSecWrap").hidden = false;
       $("impList").hidden = false; $("impNote").hidden = false; $("impGo").disabled = false;
     } catch (e) {
-      toast(e && e.message === "load" ? "Non riesco a caricare il modulo Excel: controlla la connessione e riprova." : "Non riesco a leggere questo file.");
+      toast(e && e.message === "load" ? "No puedo cargar el módulo de Excel: revisa la conexión e inténtalo de nuevo." : "No puedo leer este archivo.");
     }
   });
   $("impClose").onclick = () => { $("impScrim").hidden = true; };
   $("impGo").onclick = () => {
     const picks = [...$("impList").querySelectorAll('input[type=checkbox]')].filter(c => c.checked)
       .map(c => ({ p: parsed[+c.dataset.i], key: $("impList").querySelector(`select[data-i="${c.dataset.i}"]`).value }));
-    if (!picks.length) { toast("Scegli almeno un foglio da importare."); return; }
+    if (!picks.length) { toast("Elige al menos una hoja para importar."); return; }
     const target = $("impSec").value;
     if (target !== active) switchSection(target);
     if (!(sec().name || "").trim() && fileTitle) { sec().name = fileTitle; saveIndex(); renderSections(); }
@@ -1037,7 +1040,7 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
       const cells = {};
       const n = daysIn(key);
       p.rows.forEach((row, i) => {
-        const r = rowFor(row.name || "Voce " + (i + 1));
+        const r = rowFor(row.name || "Elemento " + (i + 1));
         const v = cells[r.id] = {};
         for (const d in row.vals) if (+d <= n) { v[d] = row.vals[d]; count++; }
       });
@@ -1049,7 +1052,7 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     writeDoc(cfgPath(), config);
     viewKey = picks[0].key;
     $("impScrim").hidden = true; render();
-    toast(`Importati ${count} valori in ${picks.length} ${picks.length === 1 ? "foglio" : "fogli"}.`);
+    toast(`Importados ${count} valores en ${picks.length} ${picks.length === 1 ? "hoja" : "hojas"}.`);
   };
 
   // ---- export ----
@@ -1064,7 +1067,7 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     const list = monthSpan();
     $("expList").innerHTML = list.reverse().map(k => {
       const n = filled(k);
-      return `<label><input type="checkbox" value="${k}"${n ? " checked" : ""}>${label(k)}<span class="cnt">${n ? n + " valori" : "vuoto"}</span></label>`;
+      return `<label><input type="checkbox" value="${k}"${n ? " checked" : ""}>${label(k)}<span class="cnt">${n ? n + " valores" : "vacío"}</span></label>`;
     }).join("");
     $("expScrim").hidden = false;
     loadXlsx().catch(() => {});
@@ -1088,12 +1091,12 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
   function buildSheet(XLSX, k) {
     const n = daysIn(k);
     const cells = (months[k] && months[k].cells) || {};
-    const head = ["Voce"]; for (let d = 1; d <= n; d++) head.push(d);
+    const head = ["Elemento"]; for (let d = 1; d <= n; d++) head.push(d);
     const rows = [head];
     config.rows.forEach((r, i) => {
       const vals = cells[r.id] || {};
       if (!r.name.trim() && !Object.keys(vals).length) return;
-      const line = [r.name.trim() || "Voce " + (i + 1)];
+      const line = [r.name.trim() || "Elemento " + (i + 1)];
       for (let d = 1; d <= n; d++) line.push(vals[d] == null ? null : vals[d]);
       rows.push(line);
     });
@@ -1107,31 +1110,31 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
   }
   $("expGo").onclick = async () => {
     const sel = expChecks().filter(c => c.checked).map(c => c.value).sort();
-    if (!sel.length) { toast("Scegli almeno un mese da esportare."); return; }
-    $("expGo").disabled = true; $("expGo").textContent = "Preparo il file…";
+    if (!sel.length) { toast("Elige al menos un mes para exportar."); return; }
+    $("expGo").disabled = true; $("expGo").textContent = "Preparando el archivo…";
     try {
       // no await when the library is ready: the phone's share sheet needs the tap to be recent
       const XLSX = window.XLSX || await loadXlsx();
       const wb = XLSX.utils.book_new();
-      wb.Props = { Title: secTitle() === "Sezione senza nome" ? "" : secTitle() };
+      wb.Props = { Title: secTitle() === "Sección sin nombre" ? "" : secTitle() };
       sel.forEach(k => XLSX.utils.book_append_sheet(wb, buildSheet(XLSX, k), label(k)));
       const data = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-      const filename = (secTitle() === "Sezione senza nome" ? "Registro" : secTitle()) + " " + (sel.length > 1 ? label(sel[0]) + " - " + label(sel.at(-1)) : label(sel[0])) + ".xlsx";
+      const filename = (secTitle() === "Sección sin nombre" ? "Registro" : secTitle()) + " " + (sel.length > 1 ? label(sel[0]) + " - " + label(sel.at(-1)) : label(sel[0])) + ".xlsx";
       await saveFile(filename, data);
     } catch (e) {
       const code = e && e.code;
-      if (code === "declined") toast("Esportazione annullata.");
-      else if (e && e.message === "load") toast("Non riesco a caricare il modulo Excel: controlla la connessione e riprova.");
-      else toast("Esportazione non riuscita su questo dispositivo.");
+      if (code === "declined") toast("Exportación cancelada.");
+      else if (e && e.message === "load") toast("No puedo cargar el módulo de Excel: revisa la conexión e inténtalo de nuevo.");
+      else toast("La exportación no ha funcionado en este dispositivo.");
     } finally {
-      $("expGo").disabled = false; $("expGo").textContent = "Esporta in Excel";
+      $("expGo").disabled = false; $("expGo").textContent = "Exportar a Excel";
     }
   };
   async function saveFile(filename, data) {
     const dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null;
     if (dl) {
       await dl.save({ filename, data });
-      $("expScrim").hidden = true; toast("File esportato.");
+      $("expScrim").hidden = true; toast("Archivo exportado.");
       return;
     }
     // outside claude.ai: the phone's share sheet (WhatsApp, email, Files…), else a download
@@ -1140,17 +1143,17 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
     if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
         await navigator.share({ files: [file], title: filename });
-        $("expScrim").hidden = true; toast("File pronto da inviare.");
+        $("expScrim").hidden = true; toast("Archivo listo para enviar.");
         return;
       } catch (e) {
-        if (e && e.name === "AbortError") { toast("Esportazione annullata."); return; }
+        if (e && e.name === "AbortError") { toast("Exportación cancelada."); return; }
       }
     }
     const url = URL.createObjectURL(new Blob([data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
     const a = Object.assign(document.createElement("a"), { href: url, download: filename });
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
-    $("expScrim").hidden = true; toast("File esportato.");
+    $("expScrim").hidden = true; toast("Archivo exportado.");
   }
 
   let toastT;
@@ -1158,9 +1161,9 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
 
   // ---- sections ----
   const sec = () => sections.find(x => x.id === active) || sections[0];
-  const secTitle = () => (sec().name || "").trim() || "Sezione senza nome";
+  const secTitle = () => (sec().name || "").trim() || "Sección sin nombre";
   function renderSections() {
-    $("secs").innerHTML = sections.map(x => `<button class="chip" data-sid="${x.id}" aria-current="${x.id === active}">${esc((x.name || "").trim() || "Sezione senza nome")}</button>`).join("");
+    $("secs").innerHTML = sections.map(x => `<button class="chip" data-sid="${x.id}" aria-current="${x.id === active}">${esc((x.name || "").trim() || "Sección sin nombre")}</button>`).join("");
     if (document.activeElement !== $("secName")) $("secName").value = sec().name || "";
   }
   function esc(t) { return t.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); }
@@ -1215,11 +1218,11 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
   ready.then(d => {
     db = d;
     if (!db) {
-      $("status").textContent = "Dati salvati su questo dispositivo. Per passarli a qualcuno usa Esporta, e lui Importa.";
+      $("status").textContent = "Datos guardados en este dispositivo. Para pasárselos a alguien usa Exportar, y esa persona Importar.";
       if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
       return;
     }
-    $("status").textContent = "Salvataggio automatico attivo.";
+    $("status").textContent = "Guardado automático activado.";
     db.doc("registro/sezioni").onSnapshot(s => {
       if (s.metadata.hasPendingWrites || timers.idx || !s.exists) return;
       const list = JSON.parse(JSON.stringify(s.data().list || []));
@@ -1230,6 +1233,6 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
       else { renderSections(); saveLocal(); }
     }, () => {});
     subscribeSection();
-  }).catch(() => { $("status").textContent = "Salvato solo su questo dispositivo."; });
+  }).catch(() => { $("status").textContent = "Guardado solo en este dispositivo."; });
 })();
 </script>
