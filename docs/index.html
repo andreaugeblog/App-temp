@@ -921,6 +921,8 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
       const r = i + 3, o = off[r] || {};
       return { id: "r" + uid(), leg: r, name: at("s3c1", r), text: at("s3c3", r), color: colorOf(r), day: dayOf(r), off: !!o.off, from: o.from || "" };
     });
+    // saved right away: values are stored under these ids, so they must survive a reload
+    saveConfig();
     return config.rows3;
   }
   function rowVals(mo, row) {
@@ -2172,6 +2174,17 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   }
 
   // ---- boot ----
+  // Before a new version touches stored data, keep a copy of everything as it was
+  // (localStorage key LS + ":backup"); old data is only ever converted forward, never dropped.
+  const APP_VERSION = "2026-10-21";
+  try {
+    if (localStorage.getItem(LS + ":ver") !== APP_VERSION) {
+      const snap = {};
+      for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k.startsWith(LS) && !k.endsWith(":backup")) snap[k] = localStorage.getItem(k); }
+      if (Object.keys(snap).length) localStorage.setItem(LS + ":backup", JSON.stringify({ from: localStorage.getItem(LS + ":ver") || "anterior", at: new Date().toISOString(), data: snap }));
+      localStorage.setItem(LS + ":ver", APP_VERSION);
+    }
+  } catch (e) {}
   fillSelects();
   try { const idx = JSON.parse(localStorage.getItem(LS + ":sezioni") || "null"); if (idx && idx.active) active = idx.active; } catch (e) {}
   loadLocal();
