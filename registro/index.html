@@ -738,8 +738,12 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
     }
     const m = months[viewKey] || (months[viewKey] = {});
     const key = t.dataset.k;
-    // a generated value typed over by hand is no longer a generated one
-    if (/^d\d+$/.test(key)) { const own = genCells(viewKey).filter(c => c !== key.slice(1) + ":" + (i + 1)); m.g2 = own; }
+    // remember what is typed by hand so deleting generated values leaves it alone
+    if (/^d\d+$/.test(key)) {
+      const c = key.slice(1) + ":" + (i + 1), man = manCells(viewKey).filter(x => x !== c);
+      if (t.value.trim()) man.push(c);
+      m.man2 = man;
+    }
     m[key] = (Array.isArray(m[key]) ? m[key] : Array(12).fill("")).slice(); m[key][i] = t.value;
     saveMonth(viewKey);
   });
@@ -862,17 +866,17 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
   function rand(lo, hi) { return Math.round((lo + Math.random() * (hi - lo)) * 10) / 10; }
 
   // ---- generation in the second section ----
-  // cells filled by the generator, as "row:day"; months generated before this was tracked
-  // fall back to the marked rows on the generator's days
-  function genCells(k) {
-    const mo = months[k] || {};
-    if (Array.isArray(mo.g2)) return mo.g2.slice();
-    if (!config.gen2) return [];
-    const out = [];
-    for (const x of g2Days(Object.assign(g2Defaults(), config.gen2))) if (x.key === k) GEN_ROWS.forEach(r => out.push(r + ":" + x.day));
+  // Values in the marked rows count as generated unless typed by hand; hand-typed cells
+  // are kept per month as "row:day" in man2.
+  const manCells = k => Array.isArray((months[k] || {}).man2) ? months[k].man2 : [];
+  function genFilled(k) {
+    const mo = months[k] || {}, man = new Set(manCells(k)), out = [];
+    for (const r of GEN_ROWS) {
+      const a = mo["d" + r]; if (!Array.isArray(a)) continue;
+      a.forEach((v, i) => { if (v != null && String(v).trim() && !man.has(r + ":" + (i + 1))) out.push(r + ":" + (i + 1)); });
+    }
     return out;
   }
-  const genFilled = k => genCells(k).filter(c => { const [r, d] = c.split(":"); const a = (months[k] || {})["d" + r]; return Array.isArray(a) && a[d - 1] && String(a[d - 1]).trim(); });
   // From the start day: 2 days with values, 5 without, repeating over real calendar days,
   // so a month's missing days (30, 31…) are never counted. Only GEN_ROWS get values.
   const G2_ON = 2, G2_CYCLE = 7;
@@ -923,7 +927,7 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
         while (arr.length < 31) arr.push("");
         if (!g.overwrite && arr[day - 1] && String(arr[day - 1]).trim()) continue;
         arr[day - 1] = String(g.min + Math.floor(Math.random() * (g.max - g.min + 1)));
-        m.g2 = [...new Set([...genCells(key), r + ":" + day])];
+        if (Array.isArray(m.man2)) m.man2 = m.man2.filter(c => c !== r + ":" + day);
         count++; touched.add(key);
       }
     }
@@ -1035,10 +1039,10 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
     if (sec().type === "s2") {
       let n = 0;
       t.forEach(k => {
-        const cells = genFilled(k); if (!cells.length && !Array.isArray((months[k] || {}).g2)) return;
+        const cells = genFilled(k); if (!cells.length) return;
         const m = months[k] = Object.assign({}, months[k]);
         cells.forEach(c => { const [r, d] = c.split(":"); m["d" + r] = m["d" + r].slice(); m["d" + r][d - 1] = ""; n++; });
-        m.g2 = [];
+        delete m.g2;
         clearTimeout(timers["m" + k]); delete timers["m" + k]; delete pending["m" + k];
         writeDoc(monthPath(k), m);
       });
