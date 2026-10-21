@@ -218,6 +218,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 .s2 .day { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 0; text-align: center; font-family: var(--f-num); font-size: .8rem; }
 .s2 .day.last { border-right: 0; }
 .s2 .day.gen { background: #fff1bf; color: #17222b; }
+.s2 .day.pickable { cursor: pointer; }
 .s2 .day.check { cursor: pointer; font-size: 1rem; }
 /* lists in the settings run one item under the other */
 .vals { display: grid; gap: 6px; margin: 2px 0 4px; }
@@ -251,6 +252,9 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 .s3 .c1.dark { background: #8d99a3 !important; color: transparent !important; }
 .pick { position: fixed; z-index: 70; display: flex; gap: 6px; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
 .pick button { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); font-size: 1.25rem; }
+.pick3 { flex-wrap: wrap; max-width: min(320px, calc(100vw - 16px)); }
+.pick3 button { width: auto; min-width: 44px; padding: 0 10px; font-family: var(--f-num); font-size: 1rem; }
+.pick3 .none { padding: 8px 10px; color: var(--muted); font-size: .85rem; }
 .pick button.clear { font-size: .8rem; width: auto; padding: 0 10px; color: var(--muted); }
 .s2 .dnum { display: grid; place-items: center; color: var(--muted); font-weight: 500; }
 .s2 .macro-title { border-bottom: 1px solid var(--line); padding: 10px 12px; font-weight: 600; font-size: .92rem; text-align: center; }
@@ -425,6 +429,8 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 </div>
 
 <div class="pick" id="pick" hidden><button data-v="✓" aria-label="Correcto">✓</button><button data-v="✗" aria-label="Incorrecto">✗</button><button class="clear" data-v="" aria-label="Vaciar">Vaciar</button></div>
+
+<div class="pick pick3" id="pick3" hidden></div>
 
 <!-- Import -->
 <div class="scrim" id="impScrim" hidden>
@@ -956,7 +962,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
       h += `<textarea data-row="${row.id}" class="${cls} l2 freq" rows="1" readonly tabindex="-1" style="grid-column:2;grid-row:${r};background:${FREQ[row.color].tint};color:#17222b" aria-label="Frecuencia de la fila ${i + 1}">${FREQ[row.color].word}</textarea>`;
       h += `<textarea data-row="${row.id}" data-col="text" class="${cls} l3" rows="1" style="grid-column:3;grid-row:${r}" aria-label="Texto de la fila ${i + 1}"></textarea>`;
       for (let d = 1; d <= 31; d++)
-        h += `<input data-row="${row.id}" data-i="${d - 1}" size="1" class="day${d === 31 ? " last" : ""}" style="grid-row:${r};grid-column:${d + 3}" aria-label="${esc(rowTitle(row, i))}, día ${d}">`;
+        h += `<input data-row="${row.id}" data-i="${d - 1}" size="1" readonly class="day pickable${d === 31 ? " last" : ""}" style="grid-row:${r};grid-column:${d + 3}" aria-label="${esc(rowTitle(row, i))}, día ${d}">`;
     });
     h += '<input id="s3Head" class="s3-head" style="grid-row:1;grid-column:4/-1" aria-label="Columna 4, fila 1">';
     for (let d = 1; d <= 31; d++) h += `<div class="day dnum${d === 31 ? " last" : ""}" style="grid-row:2;grid-column:${d + 3}">${d}</div>`;
@@ -1014,6 +1020,27 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     });
     fitS3();
   }
+  // a tap on a day cell opens the list of values set in the settings
+  let pick3Cell = null;
+  $("s3Table").addEventListener("click", e => {
+    const t = e.target.closest("input.pickable"); if (!t) return;
+    pick3Cell = t;
+    const v = vals3(), pk = $("pick3");
+    pk.innerHTML = (v.length ? v.map(x => `<button data-v="${esc(x)}">${esc(x)}</button>`).join("") : '<span class="none">Añade valores en Ajustes.</span>')
+      + '<button class="clear" data-v="">Vaciar</button>';
+    pk.hidden = false;
+    const r = t.getBoundingClientRect(), w = pk.offsetWidth, h = pk.offsetHeight;
+    pk.style.left = Math.max(8, Math.min(window.innerWidth - w - 8, r.left + r.width / 2 - w / 2)) + "px";
+    pk.style.top = (r.bottom + h + 8 > window.innerHeight ? r.top - h - 6 : r.bottom + 6) + "px";
+  });
+  $("pick3").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b || !pick3Cell) return;
+    pick3Cell.value = b.dataset.v;
+    pick3Cell.dispatchEvent(new Event("input", { bubbles: true }));
+    $("pick3").hidden = true; pick3Cell = null;
+  });
+  document.addEventListener("click", e => { if (!$("pick3").hidden && !e.target.closest("#pick3, input.pickable")) { $("pick3").hidden = true; pick3Cell = null; } });
+  $("s3Scroll").addEventListener("scroll", () => { $("pick3").hidden = true; pick3Cell = null; });
   $("s3Text").addEventListener("input", e => {
     config.fixed = Object.assign({}, config.fixed, { note: e.target.value });
     grow(e.target); saveConfig();
