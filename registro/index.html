@@ -51,7 +51,13 @@ button:focus-visible, input:focus-visible, select:focus-visible, [contenteditabl
 /* Top bar */
 .bar { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
 .bar h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: .02em; margin: 0; flex: 1; min-width: 0; text-wrap: balance; }
-.bar h1 small { display: block; font-weight: 500; font-size: .78rem; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; }
+.bar h1 input { display: block; width: 100%; border: 0; border-bottom: 1px solid transparent; background: transparent; padding: 1px 0; border-radius: 0; font-family: var(--f-ui); }
+.bar h1 input:hover { border-bottom-color: var(--line); }
+.bar h1 input:focus { outline: none; border-bottom-color: var(--accent); }
+.bar h1 .appname { font-size: 1.05rem; font-weight: 700; letter-spacing: .02em; color: var(--ink); }
+.bar h1 .appname::placeholder { color: var(--ink); opacity: 1; }
+.bar h1 .secsub { font-weight: 500; font-size: .78rem; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; margin-top: 2px; }
+.bar h1 .secsub::placeholder { color: var(--muted); opacity: .7; }
 .month { display: flex; align-items: center; gap: 2px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 2px; }
 .month b { min-width: 9.5em; text-align: center; font-weight: 600; font-size: .95rem; }
 .icon-btn { background: none; border: 0; width: 38px; height: 38px; border-radius: 8px; display: grid; place-items: center; font-size: 1.15rem; color: var(--muted); }
@@ -70,10 +76,6 @@ button:focus-visible, input:focus-visible, select:focus-visible, [contenteditabl
 .chip[aria-current="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
 .chip.add { border-style: dashed; color: var(--accent); }
 .sechead { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
-.secname { flex: 1 1 14em; min-width: 0; font: 700 1.35rem/1.2 var(--f-ui); color: var(--ink); background: transparent; border: 0; border-bottom: 2px solid transparent; padding: 4px 0; border-radius: 0; }
-.secname::placeholder { color: var(--muted); opacity: .55; }
-.secname:hover { border-bottom-color: var(--line); }
-.secname:focus { outline: none; border-bottom-color: var(--accent); }
 @media (max-width: 560px) {
   .month { flex: 1; justify-content: space-between; }
 }
@@ -211,7 +213,7 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
 </style>
 
 <header class="bar">
-  <h1>Registro Mensual<small id="sheetLabel">Sección números</small></h1>
+  <h1><input id="appName" class="appname" placeholder="Registro Mensual" autocomplete="off" aria-label="Nombre de la app"><input id="secName" class="secsub" placeholder="Nombre de la sección" autocomplete="off" aria-label="Nombre de la sección"></h1>
   <div class="menu-wrap">
     <button class="dots" id="dotsBtn" aria-label="Menú" aria-haspopup="true" aria-expanded="false">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
@@ -229,7 +231,6 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
 <nav class="secs" id="secs" aria-label="Secciones"></nav>
 
 <div class="sechead">
-  <input id="secName" class="secname" placeholder="Nombre de la sección" autocomplete="off" aria-label="Nombre de la sección">
   <div class="month">
     <button class="icon-btn" id="prevM" aria-label="Mes anterior">&#8249;</button>
     <b id="monthName"></b>
@@ -400,6 +401,7 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
   // keeps the original paths so data saved before sections existed stays in place.
   let sections = [{ id: "main", name: "", type: "numeri" }, { id: "s2", name: "", type: "s2" }];
   let active = "main";
+  let appTitle = "";        // name shown at the top; empty = "Registro Mensual"
   let config = defaults();
   let months = {};          // "YYYY-MM" -> { cells: { rowId: { day: number } } }
   let viewKey = curKey;
@@ -430,12 +432,13 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
       if (raw) { const s = JSON.parse(raw); if (s.config) config = Object.assign(defaults(), s.config); if (s.months) months = s.months; }
       const idx = JSON.parse(localStorage.getItem(LS + ":sezioni") || "null");
       if (idx && idx.list && idx.list.length) sections = withBuiltIn(idx.list);
+      if (idx && typeof idx.appTitle === "string") appTitle = idx.appTitle;
     } catch (e) {}
   }
   function saveLocal() {
     try {
       localStorage.setItem(lsKey(), JSON.stringify({ config, months }));
-      localStorage.setItem(LS + ":sezioni", JSON.stringify({ list: sections, active }));
+      localStorage.setItem(LS + ":sezioni", JSON.stringify({ list: sections, active, appTitle }));
     } catch (e) {}
   }
 
@@ -471,7 +474,7 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
   function flush() { Object.keys(pending).forEach(k => { clearTimeout(timers[k]); delete timers[k]; const fn = pending[k]; delete pending[k]; fn(); }); }
   const saveConfig = () => { const path = cfgPath(), c = config; later("config", () => writeDoc(path, c)); };
   const saveMonth = k => { const path = monthPath(k), ms = months; later("m" + k, () => writeDoc(path, ms[k] || { cells: {} })); };
-  const saveIndex = () => later("idx", () => writeDoc("registro/sezioni", { list: sections }));
+  const saveIndex = () => later("idx", () => writeDoc("registro/sezioni", { list: sections, appTitle }));
 
   // ---- rendering ----
   function namedRows() { return config.rows.filter(r => r.name.trim()); }
@@ -521,7 +524,6 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
 
   function render() {
     document.body.dataset.type = sec().type;
-    $("sheetLabel").textContent = sec().type === "s2" ? "Segunda sección" : "Sección números";
     $("s2").hidden = sec().type !== "s2";
     if (sec().type === "s2") { renderS2(); return; }
     const nDays = daysIn(viewKey);
@@ -934,7 +936,7 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
       deleteDoc(cfgPath());
       try { localStorage.removeItem(lsKey()); } catch (e) {}
       sections = sections.filter(x => x.id !== gone);
-      writeDoc("registro/sezioni", { list: sections });
+      writeDoc("registro/sezioni", { list: sections, appTitle });
       $("delScrim").hidden = true;
       switchSection(sections[0].id, true);
       toast(`Sección “${name}” eliminada.`);
@@ -1062,8 +1064,9 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
         Object.keys(ms).forEach(k => writeDoc(monthsCol(b.id) + "/" + k, ms[k]));
       }
     }
-    try { localStorage.setItem(LS + ":sezioni", JSON.stringify({ list: sections, active })); } catch (e) {}
-    if (db) writeDoc("registro/sezioni", { list: sections });
+    appTitle = typeof d.appTitle === "string" ? d.appTitle : "";
+    try { localStorage.setItem(LS + ":sezioni", JSON.stringify({ list: sections, active, appTitle })); } catch (e) {}
+    if (db) writeDoc("registro/sezioni", { list: sections, appTitle });
     switchSection(sections.some(x => x.id === active) ? active : sections[0].id, true);
   }
   $("impGo").onclick = async () => {
@@ -1138,7 +1141,7 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
       }
       out.push(JSON.parse(JSON.stringify({ id: x.id, name: x.name || "", type: x.type, config: cfg, months: ms })));
     }
-    return { app: "registro-mensual", version: 1, exportedAt: new Date().toISOString(), sections: out };
+    return { app: "registro-mensual", version: 1, exportedAt: new Date().toISOString(), appTitle, sections: out };
   }
   const monthCount = mo => {
     let n = 0;
@@ -1287,6 +1290,8 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
   function renderSections() {
     $("secs").innerHTML = sections.map(x => `<button class="chip" data-sid="${x.id}" aria-current="${x.id === active}">${esc((x.name || "").trim() || "Sección sin nombre")}</button>`).join("");
     if (document.activeElement !== $("secName")) $("secName").value = sec().name || "";
+    if (document.activeElement !== $("appName")) $("appName").value = appTitle;
+    document.title = appTitle.trim() || "Registro Mensual";
   }
   function esc(t) { return t.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]); }
   $("secs").addEventListener("click", e => {
@@ -1300,6 +1305,12 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
     saveIndex(); saveLocal();
   });
   $("secName").addEventListener("keydown", e => { if (e.key === "Enter") $("secName").blur(); });
+  $("appName").addEventListener("input", () => {
+    appTitle = $("appName").value;
+    document.title = appTitle.trim() || "Registro Mensual";
+    saveIndex(); saveLocal();
+  });
+  $("appName").addEventListener("keydown", e => { if (e.key === "Enter") $("appName").blur(); });
 
   let unsubs = [];
   function switchSection(id, skipFlush) {
@@ -1348,6 +1359,7 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
     db.doc("registro/sezioni").onSnapshot(s => {
       if (s.metadata.hasPendingWrites || timers.idx || !s.exists) return;
       const list = JSON.parse(JSON.stringify(s.data().list || []));
+      if (typeof s.data().appTitle === "string") appTitle = s.data().appTitle;
       if (!list.length) return;
       sections = withBuiltIn(list);
       if (sections.length !== list.length || sections.some((x, i) => !list[i] || list[i].id !== x.id)) saveIndex();
