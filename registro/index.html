@@ -139,6 +139,13 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
 .go { width: 100%; height: 54px; border: 0; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font-size: 1.1rem; font-weight: 700; letter-spacing: .02em; }
 .go:disabled { opacity: .45; cursor: not-allowed; }
 
+.mlist { display: grid; gap: 6px; max-height: 46vh; overflow-y: auto; margin-bottom: 16px; }
+.mlist label { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
+.mlist label:has(input:checked) { border-color: var(--accent); }
+.mlist input { width: 18px; height: 18px; accent-color: var(--accent); }
+.mlist .cnt { margin-left: auto; color: var(--muted); font-size: .8rem; font-family: var(--f-num); }
+.mlist .empty { color: var(--muted); font-size: .9rem; }
+
 .toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 60; background: var(--ink); color: var(--bg); padding: 11px 16px; border-radius: 10px; font-size: .9rem; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
 </style>
 
@@ -155,6 +162,7 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
     </button>
     <div class="menu" id="menu" hidden>
       <button id="openSettings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Impostazioni</button>
+      <button id="openExport"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 17v3h16v-3"/></svg>Esporta</button>
       <button id="goToday"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Vai al mese corrente</button>
     </div>
   </div>
@@ -207,6 +215,21 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
     <div class="summary" id="summary"></div>
     <button class="go" id="goBtn">Vai pure</button>
     <div class="row-x"><button class="link" id="setClose">Chiudi</button></div>
+  </div>
+</div>
+
+<!-- Export -->
+<div class="scrim" id="expScrim" hidden>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="expTitle">
+    <h2 id="expTitle">Esporta</h2>
+    <p class="sub">Scegli i mesi: ogni mese diventa un foglio del file Excel, che si apre anche con Google Fogli.</p>
+    <div class="inline" style="margin-bottom:10px">
+      <button class="link" id="expAll">Seleziona tutti</button>
+      <button class="link" id="expNone">Nessuno</button>
+    </div>
+    <div class="mlist" id="expList"></div>
+    <button class="go" id="expGo">Esporta in Excel</button>
+    <div class="row-x"><button class="link" id="expClose">Chiudi</button></div>
   </div>
 </div>
 
@@ -487,6 +510,94 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
     viewKey = curKey; render();
     toast(count ? `Fatto: ${count} valori inseriti (${list.length} ${list.length === 1 ? "foglio" : "fogli"}).` : "Nessuna casella vuota da riempire.");
   };
+
+  // ---- export ----
+  function filled(k) {
+    const c = (months[k] && months[k].cells) || {};
+    return Object.values(c).reduce((n, row) => n + Object.keys(row).length, 0);
+  }
+  function openExport() {
+    const keys = Object.keys(months).filter(filled).sort();
+    let first = [config.startMonth, keys[0] || curKey].sort()[0];
+    const lastK = [curKey, keys.at(-1) || curKey].sort().at(-1);
+    const list = [];
+    for (let k = first; k <= lastK; k = shift(k, 1)) list.push(k);
+    $("expList").innerHTML = list.reverse().map(k => {
+      const n = filled(k);
+      return `<label><input type="checkbox" value="${k}"${n ? " checked" : ""}>${label(k)}<span class="cnt">${n ? n + " valori" : "vuoto"}</span></label>`;
+    }).join("");
+    $("expScrim").hidden = false;
+  }
+  const expChecks = () => [...$("expList").querySelectorAll("input")];
+  $("openExport").onclick = () => { setMenu(false); openExport(); };
+  $("expAll").onclick = () => expChecks().forEach(c => c.checked = true);
+  $("expNone").onclick = () => expChecks().forEach(c => c.checked = false);
+  $("expClose").onclick = () => { $("expScrim").hidden = true; };
+
+  let xlsxLib;
+  function loadXlsx() {
+    return xlsxLib || (xlsxLib = new Promise((res, rej) => {
+      const s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js";
+      s.onload = () => res(window.XLSX);
+      s.onerror = () => { xlsxLib = null; rej(new Error("load")); };
+      document.head.appendChild(s);
+    }));
+  }
+  function buildSheet(XLSX, k) {
+    const n = daysIn(k);
+    const cells = (months[k] && months[k].cells) || {};
+    const head = ["Voce"]; for (let d = 1; d <= n; d++) head.push(d);
+    const rows = [head];
+    config.rows.forEach((r, i) => {
+      const vals = cells[r.id] || {};
+      if (!r.name.trim() && !Object.keys(vals).length) return;
+      const line = [r.name.trim() || "Voce " + (i + 1)];
+      for (let d = 1; d <= n; d++) line.push(vals[d] == null ? null : vals[d]);
+      rows.push(line);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    const nameW = Math.max(8, ...rows.map(r => String(r[0]).length)) + 2;
+    ws["!cols"] = [{ wch: Math.min(nameW, 40) }, ...Array.from({ length: n }, () => ({ wch: 6 }))];
+    ws["!freeze"] = { xSplit: 1, ySplit: 1 };
+    // one decimal shown for every value
+    Object.keys(ws).forEach(a => { if (a[0] !== "!" && typeof ws[a].v === "number" && !/^[A-Z]+1$/.test(a)) ws[a].z = "0.0"; });
+    return ws;
+  }
+  $("expGo").onclick = async () => {
+    const sel = expChecks().filter(c => c.checked).map(c => c.value).sort();
+    if (!sel.length) { toast("Scegli almeno un mese da esportare."); return; }
+    $("expGo").disabled = true; $("expGo").textContent = "Preparo il file…";
+    try {
+      const XLSX = await loadXlsx();
+      const wb = XLSX.utils.book_new();
+      sel.forEach(k => XLSX.utils.book_append_sheet(wb, buildSheet(XLSX, k), label(k)));
+      const data = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+      const filename = "Registro " + (sel.length > 1 ? label(sel[0]) + " - " + label(sel.at(-1)) : label(sel[0])) + ".xlsx";
+      await saveFile(filename, data);
+    } catch (e) {
+      const code = e && e.code;
+      if (code === "declined") toast("Esportazione annullata.");
+      else if (e && e.message === "load") toast("Non riesco a caricare il modulo Excel: controlla la connessione e riprova.");
+      else toast("Esportazione non riuscita su questo dispositivo.");
+    } finally {
+      $("expGo").disabled = false; $("expGo").textContent = "Esporta in Excel";
+    }
+  };
+  async function saveFile(filename, data) {
+    const dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null;
+    if (dl) {
+      await dl.save({ filename, data });
+      $("expScrim").hidden = true; toast("File esportato.");
+      return;
+    }
+    // outside claude.ai: plain browser download
+    const url = URL.createObjectURL(new Blob([data], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+    const a = Object.assign(document.createElement("a"), { href: url, download: filename });
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    $("expScrim").hidden = true; toast("File esportato.");
+  }
 
   let toastT;
   function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3200); }
