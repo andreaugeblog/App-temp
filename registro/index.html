@@ -174,9 +174,16 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
 /* Second section */
 body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .sechead,
 body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .sechead { display: none; }
-.s2-table.s3-table { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: none; min-height: 9em; width: 100%; }
-.s3-table > .s3-col { min-height: 9em; border-right: 1px solid var(--line); }
-.s3-table > .s3-col:last-child { border-right: 0; }
+/* third section: three columns that stay put (each a quarter of the width), then column 4 with
+   31 day columns that scroll sideways; the arrow folds the first three away */
+.s3 .s2-scroll { --t1: 25cqw; --t2: 25cqw; --t3: 25cqw; }
+.s3 .s2-scroll.collapsed { --t1: 0px; --t2: 0px; --t3: 0px; }
+.s3 .s2-scroll.collapsed .s3-left { display: none; }
+.s2-table.s3-table { grid-template-columns: var(--t1) var(--t2) var(--t3) repeat(31, 3.1em); grid-template-rows: repeat(13, 2.6em); }
+.s3 .s3-left { position: sticky; z-index: 2; grid-row: 1 / -1; border-right: 1px solid var(--line); }
+.s3 .s3-left.l1 { left: 0; }
+.s3 .s3-left.l2 { left: var(--t1); }
+.s3 .s3-left.l3 { left: calc(var(--t1) + var(--t2)); }
 .s2 { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
 .s2-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: start; }
 .s2-month { display: flex; align-items: center; gap: 2px; }
@@ -269,7 +276,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   </div>
   <button class="s2-fold" id="s3Fold" aria-label="Ocultar la macrocolumna izquierda" aria-expanded="true">&#8249;</button>
   <div class="s2-scroll" id="s3Scroll">
-    <div class="s2-table s3-table" id="s3Table"><div class="s3-col"></div><div class="s3-col"></div><div class="s3-col"></div><div class="s3-col"></div></div>
+    <div class="s2-table s3-table" id="s3Table"></div>
   </div>
 </section>
 
@@ -674,6 +681,21 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   };
 
   // ---- third section (frame only for now) ----
+  const S3_ROWS = 12;
+  function buildS3Table() {
+    let h = [1, 2, 3].map(c => `<div class="s3-left l${c}" style="grid-column:${c}"></div>`).join("");
+    for (let d = 1; d <= 31; d++) h += `<div class="day dnum${d === 31 ? " last" : ""}" style="grid-row:1;grid-column:${d + 3}">${d}</div>`;
+    for (let r = 1; r <= S3_ROWS; r++) for (let d = 1; d <= 31; d++)
+      h += `<input id="e${r}-${d - 1}" data-i="${d - 1}" data-k="e${r}" size="1" class="day${d === 31 ? " last" : ""}" style="grid-row:${r + 1};grid-column:${d + 3}" aria-label="Columna 4, fila ${r}, día ${d}">`;
+    $("s3Table").innerHTML = h;
+  }
+  buildS3Table();
+  $("s3Table").addEventListener("input", e => {
+    const t = e.target, key = t.dataset.k; if (!key) return;
+    const m = months[viewKey] || (months[viewKey] = {});
+    m[key] = (Array.isArray(m[key]) ? m[key] : []).slice(); m[key][+t.dataset.i] = t.value;
+    saveMonth(viewKey);
+  });
   function renderS3() {
     const { y, m } = parseKey(viewKey);
     $("s3M").textContent = MESI[m]; $("s3Y").textContent = y;
@@ -681,6 +703,11 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     const t = $("s3Text");
     if (document.activeElement !== t) t.value = (config.fixed && config.fixed.note) || "";
     grow(t);
+    const mo = months[viewKey] || {};
+    for (let r = 1; r <= S3_ROWS; r++) {
+      const a = Array.isArray(mo["e" + r]) ? mo["e" + r] : [];
+      for (let i = 0; i < 31; i++) { const el = $("e" + r + "-" + i); if (document.activeElement !== el) el.value = a[i] || ""; }
+    }
   }
   $("s3Text").addEventListener("input", e => {
     config.fixed = Object.assign({}, config.fixed, { note: e.target.value });
@@ -1415,7 +1442,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   // ---- export ----
   function filled(k) {
     const c = (months[k] && months[k].cells) || {};
-    const days = Object.keys(months[k] || {}).filter(key => /^d\d+$/.test(key)).reduce((n, key) => n + (months[k][key] || []).filter(v => v && String(v).trim()).length, 0);
+    const days = Object.keys(months[k] || {}).filter(key => /^[de]\d+$/.test(key)).reduce((n, key) => n + (months[k][key] || []).filter(v => v && String(v).trim()).length, 0);
     return days + Object.values(c).reduce((n, row) => n + Object.keys(row).length, 0);
   }
   // Everything the app holds: every section with its name, settings and months.
