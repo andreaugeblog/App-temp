@@ -197,7 +197,9 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
 /* Second section */
 body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .sechead,
 body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .sechead { display: none; }
-.s3-table { display: block; min-height: 9em; width: 100%; }
+.s2-table.s3-table { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: none; min-height: 9em; width: 100%; }
+.s3-table > .s3-col { min-height: 9em; border-right: 1px solid var(--line); }
+.s3-table > .s3-col:last-child { border-right: 0; }
 .s2 { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
 .s2-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: start; }
 .s2-month { display: flex; align-items: center; gap: 2px; }
@@ -290,7 +292,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   </div>
   <button class="s2-fold" id="s3Fold" aria-label="Ocultar la macrocolumna izquierda" aria-expanded="true">&#8249;</button>
   <div class="s2-scroll" id="s3Scroll">
-    <div class="s2-table s3-table" id="s3Table"></div>
+    <div class="s2-table s3-table" id="s3Table"><div class="s3-col"></div><div class="s3-col"></div><div class="s3-col"></div><div class="s3-col"></div></div>
   </div>
 </section>
 
