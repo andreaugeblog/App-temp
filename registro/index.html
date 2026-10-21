@@ -426,13 +426,17 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
   function checkReassign() {
     config.bSig = bSig();
     const b = bSet(), A = config.ranges.a, B = config.ranges.b;
-    let changed = 0;
+    let changed = 0, added = 0;
     for (const k of reassignScope()) {
       const cells = months[k] && months[k].cells; if (!cells) continue;
       let touched = false;
+      // days that some named row already has: a newly named row is filled on those days
+      const days = new Set();
+      for (const r of namedRows()) for (const d in (cells[r.id] || {})) days.add(d);
       for (const r of namedRows()) {
-        const row = cells[r.id]; if (!row) continue;
+        const row = cells[r.id] || (cells[r.id] = {});
         const wantB = b.has(r.id), [lo, hi] = wantB ? B : A;
+        for (const d of days) if (row[d] == null) { row[d] = rand(lo, hi); added++; touched = true; }
         for (const d in row) {
           const isB = gap(row[d], B) < gap(row[d], A);
           if (isB !== wantB) { row[d] = rand(lo, hi); changed++; touched = true; }
@@ -442,7 +446,10 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
     }
     saveConfig();
     refresh();
-    if (changed) toast(`Ultime due voci aggiornate: ${changed} valori convertiti.`);
+    const parts = [];
+    if (added) parts.push(`${added} valori aggiunti`);
+    if (changed) parts.push(`${changed} convertiti`);
+    if (parts.length) toast(`Voci aggiornate: ${parts.join(", ")}.`);
   }
   const queueReassign = (ms = 1200) => later("reassign", checkReassign, ms);
 
