@@ -185,20 +185,24 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 .s3 .s3-left.l2 { left: var(--t1); }
 .s3 .s3-left.l3 { left: calc(var(--t1) + var(--t2)); }
 .s3 .s3-head { position: sticky; z-index: 2; justify-self: start; left: calc(var(--t1) + var(--t2) + var(--t3)); width: calc(100cqw - var(--t1) - var(--t2) - var(--t3)); border-bottom: 1px solid var(--line); padding: 0 10px; text-align: center; }
-.s2 { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; }
+/* the section cards run edge to edge; only the title and the section tabs keep the side gutter */
+:root { --gl: max(16px, env(safe-area-inset-left, 0px)); --gr: max(16px, env(safe-area-inset-right, 0px)); }
+.bleed { margin-left: calc(-1 * var(--gl)); margin-right: calc(-1 * var(--gr)); border-left: 0 !important; border-right: 0 !important; border-radius: 0 !important; }
+.s2 { background: var(--surface); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 12px var(--gr) 0 var(--gl); }
+.s2 .s2-scroll { margin-left: calc(-1 * var(--gl)); margin-right: calc(-1 * var(--gr)); border-left: 0; border-right: 0; border-bottom: 0; border-radius: 0; }
 .s2-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 14px; align-items: start; }
 .s2-month { display: flex; align-items: center; gap: 2px; }
 /* month and year set like the month label of the first section */
 .s2-when { display: grid; text-align: center; min-width: 5.6em; line-height: 1.25; font-weight: 600; font-size: .95rem; }
 #footNote {
-  display: block; margin-top: 12px; width: 100%; height: 38px; min-height: 38px; resize: none; font: inherit; line-height: 1.45; color: var(--ink);
-  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 7px 12px; overflow: hidden;
+  display: block; margin-top: 12px; width: calc(100% + var(--gl) + var(--gr)); height: 38px; min-height: 38px; resize: none; font: inherit; line-height: 1.45; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 7px var(--gr) 7px var(--gl); overflow: hidden;
 }
 #footNote:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .weeks { display: grid; grid-template-columns: max-content 1fr; margin-top: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 .weeks > * { border-bottom: 1px solid var(--line); min-height: 2.6em; }
 .weeks > :nth-last-child(-n+2) { border-bottom: 0; }
-.weeks .wk-l { display: grid; place-items: center; padding: 0 14px; border-right: 1px solid var(--line); font-size: .8rem; font-weight: 500; }
+.weeks .wk-l { display: grid; place-items: center; padding: 0 12px 0 var(--gl); border-right: 1px solid var(--line); font-size: .8rem; font-weight: 500; }
 .weeks .wk-r { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 5px 8px; }
 .weeks .sig-thumb { width: 72px; height: 36px; border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 0; display: grid; place-items: center; }
 .weeks .sig-thumb svg { width: 100%; height: 100%; }
@@ -312,10 +316,10 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   </div>
 </div>
 
-<div class="sheet" id="sheet"><table id="grid"></table></div>
+<div class="sheet bleed" id="sheet"><table id="grid"></table></div>
 
 <!-- Third section: same frame as the second (month, note, fold arrow, table); its table is still to be defined -->
-<section class="s2 s3" id="s3" hidden>
+<section class="s2 s3 bleed" id="s3" hidden>
   <div class="s2-head">
     <div class="s2-month">
       <button class="icon-btn" id="prev3" aria-label="Mes anterior">&#8249;</button>
@@ -331,7 +335,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 </section>
 
 <!-- Second section: its own layout, built step by step -->
-<section class="s2" id="s2" hidden>
+<section class="s2 bleed" id="s2" hidden>
   <div class="s2-head">
     <div class="s2-month">
       <button class="icon-btn" id="prev2" aria-label="Mes anterior">&#8249;</button>
@@ -355,9 +359,9 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   </div>
 </div>
 <p class="status" id="status" hidden></p>
-<textarea id="footNote" rows="1" placeholder="Escribe aquí…" aria-label="Notas de la sección"></textarea>
+<textarea id="footNote" class="bleed" rows="1" placeholder="Escribe aquí…" aria-label="Notas de la sección"></textarea>
 <!-- third section only: one row per week of the month, the right column filled per month -->
-<div class="weeks" id="s3Weeks" hidden>
+<div class="weeks bleed" id="s3Weeks" hidden>
   <div class="wk-l">Semana 1</div><div class="wk-r" data-w="0"></div>
   <div class="wk-l">Semana 2</div><div class="wk-r" data-w="1"></div>
   <div class="wk-l">Semana 3</div><div class="wk-r" data-w="2"></div>
