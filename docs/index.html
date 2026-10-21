@@ -651,45 +651,44 @@ body[data-type="s2"] #openSettings, body[data-type="s2"] #openExport, body[data-
   }
   // Left macro column = two sub-columns of 12 cells each. Groups: [first row, number of rows].
   // Single rows have no lines between them; a group spanning more rows gets its own outline.
-  // Left macro column: two sub-columns with no visible horizontal lines. Grid row 1 is the top
-  // cell (same height as the right title), rows 2–13 the 12 rows. Groups: [first grid row, rows spanned];
-  // a merged cell gets its own outline.
-  const LEFT = [
-    { key: "c1", col: 1, top: 0, groups: [[1, 2], [3, 3], [6, 1]] },
-    { key: "c1b", col: 2, top: 2, groups: [[1, 2], [3, 1], [4, 1], [5, 1], [6, 1]] }
+  // Left macro column, built from bands of grid rows (row 1 = top cell beside the right title,
+  // rows 2–13 = the 12 rows). A "split" band shows two sub-columns, a "wide" band one column.
+  // Groups: [first grid row, rows spanned]; an outlined (grouped) cell gets its own border,
+  // rows outside groups have no visible lines.
+  const BANDS = [
+    { from: 1, to: 6, split: true, cols: [
+      { key: "c1", top: 0, groups: [[1, 2], [3, 3], [6, 1]] },
+      { key: "c1b", top: 2, groups: [[1, 2], [3, 1], [4, 1], [5, 1], [6, 1]] }
+    ] },
+    { from: 7, to: 11, split: false, cols: [{ key: "cw", groups: [[7, 1], [8, 1], [9, 1], [10, 1], [11, 1]] }] },
+    { from: 12, to: 13, split: true, cols: [
+      { key: "c1", groups: [[12, 1]] },
+      { key: "c1b", groups: [[12, 1]] }
+    ] }
   ];
-  // from this grid row down the left macro column is one column again (full width)
-  const WIDE_FROM = 7;
-  const WIDE = { key: "cw", groups: [[7, 5]] };
   // temporary: each created cell gets its own colour to check the layout
-  const TINTS = ["#ffd6d6", "#ffe7c2", "#fff6b3", "#d9f5c5", "#c9f0e9", "#cfe6ff", "#dcd6ff", "#f3d4f7", "#ffd9ea", "#e6e0d4", "#d4ecd8", "#d7e3f4"];
+  const TINTS = ["#ffd6d6", "#ffe7c2", "#fff6b3", "#d9f5c5", "#c9f0e9", "#cfe6ff", "#dcd6ff", "#f3d4f7", "#ffd9ea", "#e6e0d4", "#d4ecd8", "#d7e3f4", "#f9e0c8", "#d0f0f7", "#ecd9c6", "#e2f7c9"];
   function buildS2Table() {
     let tint = 0;
     let h = '<input id="macro1" data-t="1" class="macro-title" style="grid-area:1/3" aria-label="Titolo macro colonna destra">';
-    for (const c of LEFT) {
-      let prevBoxed = false;
-      for (let r = 1; r < WIDE_FROM; ) {
-        const g = c.groups.find(x => x[0] === r);
-        const span = g ? g[1] : 1;
-        // an outlined cell draws its bottom line, and its top line only when the cell above has none
-        const cls = "c1" + (g ? " boxed" : "") + (g && (r === 1 || prevBoxed) ? " at-top" : "");
-        prevBoxed = !!g;
-        const pos = `grid-row:${r}/span ${span};grid-column:${c.col}` + (g ? `;background:${TINTS[tint++ % TINTS.length]};color:#17222b` : "");
-        h += r === 1
-          ? `<textarea id="macro${c.top}" data-t="${c.top}" class="${cls} macro-title left" rows="1" style="${pos}" aria-label="Colonna ${c.col}, in alto"></textarea>`
-          : `<textarea id="${c.key}-${r - 2}" data-i="${r - 2}" data-k="${c.key}" class="${cls}" rows="1" style="${pos}" aria-label="Colonna ${c.col}, riga ${r - 1}"></textarea>`;
-        r += span;
-      }
-    }
-    let prevBoxed = true;
-    for (let r = WIDE_FROM; r <= 13; ) {
-      const g = WIDE.groups.find(x => x[0] === r);
-      const span = g ? g[1] : 1;
-      const cls = "c1" + (g ? " boxed" : "") + (g && prevBoxed ? " at-top" : "");
-      prevBoxed = !!g;
-      const pos = `grid-row:${r}/span ${span};grid-column:1/3` + (g ? `;background:${TINTS[tint++ % TINTS.length]};color:#17222b` : "");
-      h += `<textarea id="${WIDE.key}-${r - 2}" data-i="${r - 2}" data-k="${WIDE.key}" class="${cls}" rows="1" style="${pos}" aria-label="Colonna sinistra, riga ${r - 1}"></textarea>`;
-      r += span;
+    const boxedAt = {};   // "col:row" -> the cell ending on that row has a bottom line
+    for (const band of BANDS) {
+      band.cols.forEach((c, ci) => {
+        const col = band.split ? String(ci + 1) : "1/3";
+        for (let r = band.from; r <= band.to; ) {
+          const g = c.groups.find(x => x[0] === r);
+          const span = g ? g[1] : 1;
+          // an outlined cell draws its bottom line, and its top line only when the cell above has none
+          const above = boxedAt[(band.split ? ci + 1 : 1) + ":" + (r - 1)] || (!band.split && boxedAt["1:" + (r - 1)] && boxedAt["2:" + (r - 1)]);
+          const cls = "c1" + (g ? " boxed" : "") + (g && (r === 1 || above) ? " at-top" : "");
+          if (g) { if (band.split) boxedAt[(ci + 1) + ":" + (r + span - 1)] = true; else { boxedAt["1:" + (r + span - 1)] = boxedAt["2:" + (r + span - 1)] = true; } }
+          const pos = `grid-row:${r}/span ${span};grid-column:${col}` + (g ? `;background:${TINTS[tint++ % TINTS.length]};color:#17222b` : "");
+          h += r === 1
+            ? `<textarea id="macro${c.top}" data-t="${c.top}" class="${cls} macro-title left" rows="1" style="${pos}" aria-label="Colonna sinistra, in alto"></textarea>`
+            : `<textarea id="${c.key}-${r - 2}" data-i="${r - 2}" data-k="${c.key}" class="${cls}" rows="1" style="${pos}" aria-label="Colonna sinistra, riga ${r - 1}"></textarea>`;
+          r += span;
+        }
+      });
     }
     for (let i = 0; i < 12; i++) h += `<input id="r12-${i}" data-i="${i}" data-k="r12" size="1" class="r12${i === 11 ? " last" : ""}" style="grid-row:${i + 2};grid-column:3" aria-label="Colonna destra, riga ${i + 1}">`;
     $("s2Table").innerHTML = h;
