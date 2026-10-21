@@ -349,7 +349,7 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
 <div class="scrim" id="delScrim" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="delTitle">
     <h2 id="delTitle">Eliminar</h2>
-    <p class="sub">Borra los valores introducidos. No se puede deshacer: exporta antes un archivo si quieres guardar una copia.</p>
+    <p class="sub" id="delSub">Borra los valores introducidos. No se puede deshacer: exporta antes un archivo si quieres guardar una copia.</p>
     <div class="opts">
       <label><span class="head"><input type="radio" name="delMode" value="month" checked> Solo <span id="delCur"></span></span></label>
       <label><span class="head"><input type="radio" name="delMode" value="range"> De un mes a otro</span>
@@ -738,6 +738,8 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
     }
     const m = months[viewKey] || (months[viewKey] = {});
     const key = t.dataset.k;
+    // a generated value typed over by hand is no longer a generated one
+    if (/^d\d+$/.test(key)) { const own = genCells(viewKey).filter(c => c !== key.slice(1) + ":" + (i + 1)); m.g2 = own; }
     m[key] = (Array.isArray(m[key]) ? m[key] : Array(12).fill("")).slice(); m[key][i] = t.value;
     saveMonth(viewKey);
   });
@@ -860,6 +862,17 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
   function rand(lo, hi) { return Math.round((lo + Math.random() * (hi - lo)) * 10) / 10; }
 
   // ---- generation in the second section ----
+  // cells filled by the generator, as "row:day"; months generated before this was tracked
+  // fall back to the marked rows on the generator's days
+  function genCells(k) {
+    const mo = months[k] || {};
+    if (Array.isArray(mo.g2)) return mo.g2.slice();
+    if (!config.gen2) return [];
+    const out = [];
+    for (const x of g2Days(Object.assign(g2Defaults(), config.gen2))) if (x.key === k) GEN_ROWS.forEach(r => out.push(r + ":" + x.day));
+    return out;
+  }
+  const genFilled = k => genCells(k).filter(c => { const [r, d] = c.split(":"); const a = (months[k] || {})["d" + r]; return Array.isArray(a) && a[d - 1] && String(a[d - 1]).trim(); });
   // From the start day: 2 days with values, 5 without, repeating over real calendar days,
   // so a month's missing days (30, 31…) are never counted. Only GEN_ROWS get values.
   const G2_ON = 2, G2_CYCLE = 7;
@@ -910,6 +923,7 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
         while (arr.length < 31) arr.push("");
         if (!g.overwrite && arr[day - 1] && String(arr[day - 1]).trim()) continue;
         arr[day - 1] = String(g.min + Math.floor(Math.random() * (g.max - g.min + 1)));
+        m.g2 = [...new Set([...genCells(key), r + ":" + day])];
         count++; touched.add(key);
       }
     }
@@ -971,6 +985,13 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
   function delSummary() {
     const mode = document.querySelector('input[name="delMode"]:checked').value;
     const t = delTargets();
+    if (sec().type === "s2") {
+      const n = t.reduce((a, k) => a + genFilled(k).length, 0);
+      $("delSummary").innerHTML = n ? `Se borrarán <b>${n} valores generados</b>.` : "Aquí no hay valores generados que borrar.";
+      $("delGo").disabled = !n;
+      disarmDel();
+      return;
+    }
     const n = t.reduce((s, k) => s + filled(k), 0);
     const sheets = t.filter(filled).length;
     let txt = n ? `Se borrarán <b>${n} valores</b> en <b>${sheets} ${sheets === 1 ? "hoja" : "hojas"}</b>.` : "Aquí no hay valores que borrar.";
@@ -992,6 +1013,9 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
     $("delSecOpt").hidden = sections.length < 2 || BUILT_IN.some(b => b.id === active);
     $("delNames").parentElement.hidden = sec().type !== "numeri";
     $("delSecName").textContent = secTitle();
+    $("delSub").textContent = sec().type === "s2"
+      ? "Borra solo los valores generados automáticamente; lo que has escrito a mano se queda. No se puede deshacer."
+      : "Borra los valores introducidos. No se puede deshacer: exporta antes un archivo si quieres guardar una copia.";
     delSummary();
     $("delScrim").hidden = false;
   }
@@ -1008,6 +1032,20 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
     }
     const mode = document.querySelector('input[name="delMode"]:checked').value;
     const t = delTargets();
+    if (sec().type === "s2") {
+      let n = 0;
+      t.forEach(k => {
+        const cells = genFilled(k); if (!cells.length && !Array.isArray((months[k] || {}).g2)) return;
+        const m = months[k] = Object.assign({}, months[k]);
+        cells.forEach(c => { const [r, d] = c.split(":"); m["d" + r] = m["d" + r].slice(); m["d" + r][d - 1] = ""; n++; });
+        m.g2 = [];
+        clearTimeout(timers["m" + k]); delete timers["m" + k]; delete pending["m" + k];
+        writeDoc(monthPath(k), m);
+      });
+      $("delScrim").hidden = true; render();
+      toast(`${n} valores generados borrados.`);
+      return;
+    }
     t.forEach(k => { clearTimeout(timers["m" + k]); delete timers["m" + k]; delete pending["m" + k]; delete months[k]; deleteDoc(monthPath(k)); });
     if (mode === "section") {
       const gone = active, name = secTitle();
