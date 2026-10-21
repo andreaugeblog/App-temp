@@ -791,12 +791,25 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
   }
   buildS2Table();
   // a cell with more lines makes its row taller (a merged cell spreads it over its rows)
+  // Text is centred both ways: the cell is sized with a 9px padding, then the spare
+  // height of its grid area is split above and below the text.
+  const PAD = 9;
   function fitCell(t) {
-    t.style.height = "auto"; t.style.minHeight = "0";
+    t.style.paddingTop = t.style.paddingBottom = PAD + "px";
+    // an explicit 0 height (not auto: the grid would stretch it) leaves just the text's height
+    t.style.height = "0px"; t.style.minHeight = "0";
     const h = t.scrollHeight;
     t.style.height = ""; t.style.minHeight = h + "px";
+    t.dataset.content = h - 2 * PAD;
   }
-  const fitAll = () => $("s2Table").querySelectorAll("textarea").forEach(fitCell);
+  function centerCell(t) {
+    const spare = t.clientHeight - (+t.dataset.content || 0);
+    const top = Math.max(PAD, Math.floor(spare / 2));
+    t.style.paddingTop = top + "px"; t.style.paddingBottom = Math.max(PAD, spare - top) + "px";
+  }
+  const centerAll = () => $("s2Table").querySelectorAll("textarea").forEach(centerCell);
+  function fitAll() { $("s2Table").querySelectorAll("textarea").forEach(fitCell); centerAll(); }
+  if (window.ResizeObserver) new ResizeObserver(() => requestAnimationFrame(centerAll)).observe($("s2Table"));
   // the arrow above the table folds the left macro column away to give the days the full width
   function setFold(folded) {
     $("s2Scroll").classList.toggle("collapsed", folded);
@@ -828,7 +841,7 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
   document.querySelector(".s2-scroll").addEventListener("scroll", () => { $("pick").hidden = true; pickCell = null; });
   $("s2Table").addEventListener("input", e => {
     const t = e.target, i = +t.dataset.i;
-    if (t.tagName === "TEXTAREA") fitCell(t);
+    if (t.tagName === "TEXTAREA") fitAll();
     if (t.classList.contains("macro-title")) {
       const k = +t.dataset.t;
       config.macro = (config.macro || ["", "", ""]).slice(); config.macro[k] = t.value; saveConfig();
