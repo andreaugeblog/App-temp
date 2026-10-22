@@ -20,7 +20,7 @@ body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.XLSX_SRC = "xlsx.full.min.js"; window.APP_BUILD = "755a8592d7";</script>
+<script>window.XLSX_SRC = "xlsx.full.min.js"; window.APP_BUILD = "24be39e51f";</script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -141,8 +141,6 @@ td.off { background: repeating-linear-gradient(135deg, var(--off) 0 4px, transpa
 td.off input { visibility: hidden; }
 .is-today { background: var(--today); }
 thead th.is-today { color: var(--accent); font-weight: 600; }
-tr.b th.name .name-in::after { content: "franja 2"; display: block; font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; color: var(--warm); margin-top: 2px; }
-tr.b th.name .name-in:empty::after { display: none; }
 
 .under { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
 .ghost { background: var(--surface); border: 1px solid var(--line); border-radius: 9px; padding: 8px 14px; font-weight: 500; }
@@ -392,7 +390,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   <button class="ghost" id="delRow">− Quitar último elemento</button>
   <div class="legend">
     <span><i style="background:var(--cold)"></i>Elementos normales</span>
-    <span><i style="background:var(--warm)"></i>Dos últimos elementos (franja 2)</span>
+    <span><i style="background:var(--warm)"></i>Dos últimos elementos</span>
   </div>
 </div>
 <p class="status" id="status" hidden></p>
