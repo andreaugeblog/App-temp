@@ -1249,6 +1249,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     $("s3Scroll").classList.toggle("collapsed", folded);
     $("s3Fold").innerHTML = folded ? "&#8250;" : "&#8249;";
     $("s3Fold").setAttribute("aria-expanded", String(!folded));
+    fitS3();
   };
 
   // ---- second section ----
@@ -1372,14 +1373,17 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   // height of its grid area is split above and below the text.
   const PAD = 9;
   function fitCell(t) {
+    // a folded (hidden) cell measures 0: keep its last measure instead of a wrong one
+    if (!t.getClientRects().length) return;
     t.style.paddingTop = t.style.paddingBottom = PAD + "px";
     // an explicit 0 height (not auto: the grid would stretch it) leaves just the text's height
     t.style.height = "0px"; t.style.minHeight = "0";
     const h = t.scrollHeight;
     t.style.height = ""; t.style.minHeight = h + "px";
-    t.dataset.content = h - 2 * PAD;
+    t.dataset.content = Math.max(0, h - 2 * PAD);
   }
   function centerCell(t) {
+    if (!t.getClientRects().length || t.dataset.content == null) return;
     const spare = t.clientHeight - (+t.dataset.content || 0);
     const top = Math.max(PAD, Math.floor(spare / 2));
     t.style.paddingTop = top + "px"; t.style.paddingBottom = Math.max(PAD, spare - top) + "px";
@@ -1421,7 +1425,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     $("s2Fold").setAttribute("aria-label", folded ? "Mostrar la macrocolumna izquierda" : "Ocultar la macrocolumna izquierda");
     try { localStorage.setItem(LS + ":fold", folded ? "1" : ""); } catch (e) {}
   }
-  $("s2Fold").onclick = () => setFold(!$("s2Scroll").classList.contains("collapsed"));
+  $("s2Fold").onclick = () => { setFold(!$("s2Scroll").classList.contains("collapsed")); fitAll(); };
   try { if (localStorage.getItem(LS + ":fold") === "1") setFold(true); } catch (e) {}
   // ✓ / ✗ rows: a tap opens a small chooser next to the cell
   let pickCell = null;
