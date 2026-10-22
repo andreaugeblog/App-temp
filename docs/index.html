@@ -20,7 +20,7 @@ body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.XLSX_SRC = "xlsx.full.min.js"; window.APP_BUILD = "e24fc6a093";</script>
+<script>window.XLSX_SRC = "xlsx.full.min.js"; window.APP_BUILD = "a9776d49c3";</script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -43,12 +43,19 @@ img{max-width:100%}
   --shadow: 0 10px 30px rgba(20, 40, 60, .16);
   --f-ui: "Archivo", "Helvetica Neue", Arial, sans-serif;
   --f-num: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  /* cell tints: generated rows, frequencies, switched-off rows, signatures */
+  --t-gen: #fff1bf; --t-blue: #eaf2fd; --t-yellow: #fff8df; --t-red: #fdeeec; --t-green: #ebf7ec;
+  --t-ink: #17222b; --t-off: #8d99a3; --sig-bg: #ffffff; --sig-ink: #17222b;
+  --chip-on: #17222b; --chip-on-ink: #eef2f5;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0e1418; --surface: #151d23; --ink: #e2e9ee; --muted: #8b9aa6; --line: #27333c;
     --accent: #5aaedf; --accent-ink: #08131a; --today: #18303f; --cold: #8cc3ea; --warm: #7fcfa5;
     --off: #11181d; --danger: #f07a6e; --shadow: 0 10px 30px rgba(0, 0, 0, .5);
+    --t-gen: #2c2a1c; --t-blue: #1b2733; --t-yellow: #2a281b; --t-red: #2e1f1f; --t-green: #1b2a20;
+    --t-ink: #c9d3da; --t-off: #3a444c; --sig-bg: #1b242a; --sig-ink: #d6dee4;
+    --chip-on: #2b3d4a; --chip-on-ink: #e2e9ee;
     color-scheme: dark;
   }
 }
@@ -56,6 +63,9 @@ img{max-width:100%}
   --bg: #0e1418; --surface: #151d23; --ink: #e2e9ee; --muted: #8b9aa6; --line: #27333c;
   --accent: #5aaedf; --accent-ink: #08131a; --today: #18303f; --cold: #8cc3ea; --warm: #7fcfa5;
   --off: #11181d; --danger: #f07a6e; --shadow: 0 10px 30px rgba(0, 0, 0, .5);
+    --t-gen: #2c2a1c; --t-blue: #1b2733; --t-yellow: #2a281b; --t-red: #2e1f1f; --t-green: #1b2a20;
+    --t-ink: #c9d3da; --t-off: #3a444c; --sig-bg: #1b242a; --sig-ink: #d6dee4;
+    --chip-on: #2b3d4a; --chip-on-ink: #e2e9ee;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -97,7 +107,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, [contenteditabl
 .secs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; margin-bottom: 12px; scrollbar-width: none; }
 .secs::-webkit-scrollbar { display: none; }
 .chip { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 14px; font-weight: 500; font-size: .88rem; color: var(--muted); max-width: 16em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.chip[aria-current="true"] { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.chip[aria-current="true"] { background: var(--chip-on); border-color: var(--chip-on); color: var(--chip-on-ink); }
 .chip.add { border-style: dashed; color: var(--accent); }
 .sechead { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 @media (max-width: 560px) {
@@ -228,11 +238,11 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 .weeks > :nth-last-child(-n+2) { border-bottom: 0; }
 .weeks .wk-l { display: grid; place-items: center; padding: 0 12px 0 var(--gl); border-right: 1px solid var(--line); font-size: .8rem; font-weight: 500; }
 .weeks .wk-r { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 5px 8px; }
-.weeks .sig-thumb { width: 72px; height: 36px; border: 1px solid var(--line); border-radius: 6px; background: #fff; padding: 0; display: grid; place-items: center; }
+.weeks .sig-thumb { width: 72px; height: 36px; border: 1px solid var(--line); border-radius: 6px; background: var(--sig-bg); padding: 0; display: grid; place-items: center; }
 .weeks .sig-thumb svg { width: 100%; height: 100%; }
 .weeks .sig-add { width: 32px; height: 32px; border-radius: 8px; border: 1px dashed var(--accent); background: var(--surface); color: var(--accent); font-size: 1.2rem; line-height: 1; }
-.sigpad { display: block; width: 100%; aspect-ratio: 2 / 1; max-width: 100%; background: #fff; border: 1px solid var(--line); border-radius: 10px; touch-action: none; cursor: crosshair; }
-.sigpad path, .sig-thumb path { fill: none; stroke: #17222b; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.sigpad { display: block; width: 100%; aspect-ratio: 2 / 1; max-width: 100%; background: var(--sig-bg); border: 1px solid var(--line); border-radius: 10px; touch-action: none; cursor: crosshair; }
+.sigpad path, .sig-thumb path { fill: none; stroke: var(--sig-ink); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .s2 #s2Text, .s2 #s3Text {
   /* starts as tall as the month selector beside it and grows downward with the text */
   width: 100%; height: 38px; min-height: 38px; resize: none; font: inherit; line-height: 1.45; color: var(--ink);
@@ -262,7 +272,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 .s2 .stickv { justify-self: start; }
 .s2 .day { border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); padding: 0; text-align: center; font-family: var(--f-num); font-size: .8rem; }
 .s2 .day.last { border-right: 0; }
-.s2 .day.gen { background: #fff1bf; color: #17222b; }
+.s2 .day.gen { background: var(--t-gen); color: var(--t-ink); }
 .s2 .day.pickable { cursor: pointer; }
 .s2 .day.check { cursor: pointer; font-size: 1rem; }
 /* lists in the settings run one item under the other */
@@ -293,8 +303,8 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 .offlist input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); }
 .offlist input[type=date] { font: inherit; font-size: .82rem; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 7px; padding: 4px 6px; }
 .offlist input[type=date]:disabled { opacity: .4; }
-.s3 .day.dark { background: #8d99a3 !important; color: transparent !important; pointer-events: none; }
-.s3 .c1.dark { background: #8d99a3 !important; color: transparent !important; }
+.s3 .day.dark { background: var(--t-off) !important; color: transparent !important; pointer-events: none; }
+.s3 .c1.dark { background: var(--t-off) !important; color: transparent !important; }
 .pick { position: fixed; z-index: 70; display: flex; gap: 6px; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); }
 .pick button { width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); font-size: 1.25rem; }
 .pick3 { flex-wrap: wrap; max-width: min(320px, calc(100vw - 16px)); }
@@ -911,10 +921,10 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   // day for monthly/quarterly rows, an on/off state and, per month, 31 values (months[k].v3[id]).
   // The generator draws from the values listed in the settings.
   const FREQ = {
-    blue:   { word: "Semanal",    tint: "#eaf2fd", mark: "#7fb0ea", every: 7,  text: "una columna con valores, luego 6 vacías; en cada columna como mucho 3 valores distintos entre todas las filas semanales" },
-    yellow: { word: "Quincenal",  tint: "#fff8df", mark: "#e8c35a", every: 14, text: "una columna con un valor, luego 13 vacías" },
-    red:    { word: "Mensual",    tint: "#fdeeec", mark: "#e58c84", months: 1, text: "un valor al mes, el día de la fila" },
-    green:  { word: "Trimestral", tint: "#ebf7ec", mark: "#7cc48a", months: 3, text: "un valor cada 3 meses, el día de la fila, desde el mes del día de inicio" }
+    blue:   { word: "Semanal",    tint: "var(--t-blue)", mark: "#7fb0ea", every: 7,  text: "una columna con valores, luego 6 vacías; en cada columna como mucho 3 valores distintos entre todas las filas semanales" },
+    yellow: { word: "Quincenal",  tint: "var(--t-yellow)", mark: "#e8c35a", every: 14, text: "una columna con un valor, luego 13 vacías" },
+    red:    { word: "Mensual",    tint: "var(--t-red)", mark: "#e58c84", months: 1, text: "un valor al mes, el día de la fila" },
+    green:  { word: "Trimestral", tint: "var(--t-green)", mark: "#7cc48a", months: 3, text: "un valor cada 3 meses, el día de la fila, desde el mes del día de inicio" }
   };
   const vals3 = () => Array.isArray(config.vals3) ? config.vals3 : [];
   function drawVals() {
@@ -1177,9 +1187,9 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
       const r = i + 3, cls = "c1 s3-left boxed at-top";
       h += `<textarea data-row="${row.id}" data-col="name" class="${cls} l1" rows="1" style="grid-column:1;grid-row:${r}" aria-label="Nombre de la fila ${i + 1}"></textarea>`;
       h += `<textarea data-row="${row.id}" data-col="text" class="${cls} l2" rows="1" style="grid-column:2;grid-row:${r}" aria-label="Texto de la fila ${i + 1}"></textarea>`;
-      h += `<textarea data-row="${row.id}" class="${cls} l3 freq" rows="1" readonly tabindex="-1" style="grid-column:3;grid-row:${r};background:${FREQ[row.color].tint};color:#17222b" aria-label="${FREQ[row.color].word}">${FREQ[row.color].word[0]}</textarea>`;
+      h += `<textarea data-row="${row.id}" class="${cls} l3 freq" rows="1" readonly tabindex="-1" style="grid-column:3;grid-row:${r};background:${FREQ[row.color].tint};color:var(--t-ink)" aria-label="${FREQ[row.color].word}">${FREQ[row.color].word[0]}</textarea>`;
       for (let d = 1; d <= 31; d++)
-        h += `<input data-row="${row.id}" data-i="${d - 1}" size="1" readonly class="day pickable${d === 31 ? " last" : ""}" style="grid-row:${r};grid-column:${d + 3};background:${FREQ[row.color].tint};color:#17222b" aria-label="${esc(rowTitle(row, i))}, día ${d}">`;
+        h += `<input data-row="${row.id}" data-i="${d - 1}" size="1" readonly class="day pickable${d === 31 ? " last" : ""}" style="grid-row:${r};grid-column:${d + 3};background:${FREQ[row.color].tint};color:var(--t-ink)" aria-label="${esc(rowTitle(row, i))}, día ${d}">`;
     });
     h += '<input id="s3Head" class="s3-head" style="grid-row:1;grid-column:4/-1" aria-label="Columna 4, fila 1">';
     for (let d = 1; d <= 31; d++) h += `<div class="day dnum${d === 31 ? " last" : ""}" style="grid-row:2;grid-column:${d + 3}">${d}</div>`;
