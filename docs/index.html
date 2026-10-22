@@ -20,7 +20,7 @@ body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.XLSX_SRC = "xlsx.full.min.js"; window.APP_BUILD = "a9776d49c3";</script>
+<script>window.XLSX_SRC = "xlsx.full.min.js"; window.APP_BUILD = "21b74ae49a";</script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -210,15 +210,14 @@ body[data-type="s2"] #sheet, body[data-type="s2"] .under, body[data-type="s2"] .
 body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .sechead { display: none; }
 /* third section: three columns that stay put (each as wide as its longest word), then column 4 with
    31 day columns that scroll sideways; the arrow folds the first three away */
-.s3 .s2-scroll { --t1: var(--w1, 48px); --t2: var(--w2, 48px); --t3: var(--w3, 48px); }
-.s3 .s2-scroll.collapsed { --t1: 0px; --t2: 0px; --t3: 0px; }
+.s3 .s2-scroll { --t1: var(--w1, 48px); --t2: var(--w2, 48px); }
+.s3 .s2-scroll.collapsed { --t1: 0px; --t2: 0px; }
 .s3 .s2-scroll.collapsed .s3-left { display: none; }
-.s2-table.s3-table { grid-template-columns: var(--t1) var(--t2) var(--t3) repeat(31, 3.1em); }
+.s2-table.s3-table { grid-template-columns: var(--t1) var(--t2) repeat(31, 3.1em); }
 .s3 .s3-left { position: sticky; z-index: 2; border-right: 1px solid var(--line); }
 .s3 .s3-left.l1 { left: 0; }
 .s3 .s3-left.l2 { left: var(--t1); }
-.s3 .s3-left.l3 { left: calc(var(--t1) + var(--t2)); }
-.s3 .s3-head { position: sticky; z-index: 2; justify-self: start; left: calc(var(--t1) + var(--t2) + var(--t3)); width: calc(100cqw - var(--t1) - var(--t2) - var(--t3)); border-bottom: 1px solid var(--line); padding: 0 10px; text-align: center; }
+.s3 .s3-head { position: sticky; z-index: 2; justify-self: start; left: calc(var(--t1) + var(--t2)); width: calc(100cqw - var(--t1) - var(--t2)); border-bottom: 1px solid var(--line); padding: 0 10px; text-align: center; }
 /* the section cards run edge to edge; only the title and the section tabs keep the side gutter */
 :root { --gl: max(16px, env(safe-area-inset-left, 0px)); --gr: max(16px, env(safe-area-inset-right, 0px)); }
 .bleed { margin-left: calc(-1 * var(--gl)); margin-right: calc(-1 * var(--gr)); border-left: 0 !important; border-right: 0 !important; border-radius: 0 !important; }
@@ -1178,21 +1177,20 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     const rows = rows3(), fx = config.fixed || {};
     $("s3Table").style.gridTemplateRows = `repeat(${rows.length + 2}, minmax(2.6em, auto))`;
     let h = "";
-    [1, 2, 3].forEach(c => {
-      // the frequency column (label 2) sits third and the text column (label 3) second
-      const col = c === 2 ? 3 : c === 3 ? 2 : 1;
-      h += `<textarea id="s3lab${c}" data-lab="${c}" class="c1 s3-left l${col} boxed at-top" rows="1" style="grid-column:${col};grid-row:1/span 2" aria-label="Columna ${col}, etiqueta"></textarea>`;
+    // two columns on the left: the row name, then its frequency. The text column was removed;
+    // its saved text (row.text, label s3c3) is kept untouched in the data.
+    [1, 2].forEach(c => {
+      h += `<textarea id="s3lab${c}" data-lab="${c}" class="c1 s3-left l${c} boxed at-top" rows="1" style="grid-column:${c};grid-row:1/span 2" aria-label="Columna ${c}, etiqueta"></textarea>`;
     });
     rows.forEach((row, i) => {
       const r = i + 3, cls = "c1 s3-left boxed at-top";
       h += `<textarea data-row="${row.id}" data-col="name" class="${cls} l1" rows="1" style="grid-column:1;grid-row:${r}" aria-label="Nombre de la fila ${i + 1}"></textarea>`;
-      h += `<textarea data-row="${row.id}" data-col="text" class="${cls} l2" rows="1" style="grid-column:2;grid-row:${r}" aria-label="Texto de la fila ${i + 1}"></textarea>`;
-      h += `<textarea data-row="${row.id}" class="${cls} l3 freq" rows="1" readonly tabindex="-1" style="grid-column:3;grid-row:${r};background:${FREQ[row.color].tint};color:var(--t-ink)" aria-label="${FREQ[row.color].word}">${FREQ[row.color].word[0]}</textarea>`;
+      h += `<textarea data-row="${row.id}" class="${cls} l2 freq" rows="1" readonly tabindex="-1" style="grid-column:2;grid-row:${r};background:${FREQ[row.color].tint};color:var(--t-ink)" aria-label="${FREQ[row.color].word}">${FREQ[row.color].word[0]}</textarea>`;
       for (let d = 1; d <= 31; d++)
-        h += `<input data-row="${row.id}" data-i="${d - 1}" size="1" readonly class="day pickable${d === 31 ? " last" : ""}" style="grid-row:${r};grid-column:${d + 3};background:${FREQ[row.color].tint};color:var(--t-ink)" aria-label="${esc(rowTitle(row, i))}, día ${d}">`;
+        h += `<input data-row="${row.id}" data-i="${d - 1}" size="1" readonly class="day pickable${d === 31 ? " last" : ""}" style="grid-row:${r};grid-column:${d + 2};background:${FREQ[row.color].tint};color:var(--t-ink)" aria-label="${esc(rowTitle(row, i))}, día ${d}">`;
     });
-    h += '<input id="s3Head" class="s3-head" style="grid-row:1;grid-column:4/-1" aria-label="Columna 4, fila 1">';
-    for (let d = 1; d <= 31; d++) h += `<div class="day dnum${d === 31 ? " last" : ""}" style="grid-row:2;grid-column:${d + 3}">${d}</div>`;
+    h += '<input id="s3Head" class="s3-head" style="grid-row:1;grid-column:3/-1" aria-label="Días, fila 1">';
+    for (let d = 1; d <= 31; d++) h += `<div class="day dnum${d === 31 ? " last" : ""}" style="grid-row:2;grid-column:${d + 2}">${d}</div>`;
     $("s3Table").innerHTML = h;
   }
   $("s3Table").addEventListener("input", e => {
@@ -1210,10 +1208,10 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     setRowVals(viewKey, row, arr);
     saveMonth(viewKey);
   });
-  // each of the first three columns is as wide as its longest word; text centred both ways
+  // each of the left columns is as wide as its longest word; text centred both ways
   function fitS3() {
     const sc = $("s3Scroll");
-    [1, 2, 3].forEach(c => {
+    [1, 2].forEach(c => {
       const w = Math.max(48, ...[...$("s3Table").querySelectorAll(".s3-left.l" + c)].map(wordWidth));
       sc.style.setProperty("--w" + c, Math.ceil(w) + "px");
     });
@@ -1233,7 +1231,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     const shape = rows.map(r => r.id + r.color).join();
     if (shape !== s3Shape || !$("s3Head")) { buildS3Table(); s3Shape = shape; }
     const fx = config.fixed || {}, mo = months[viewKey] || {}, focus = document.activeElement;
-    [1, 2, 3].forEach(c => {
+    [1, 2].forEach(c => {
       const el = $("s3lab" + c), arr = Array.isArray(fx["s3c" + c]) ? fx["s3c" + c] : (fx["l" + c] ? [fx["l" + c]] : []);
       if (focus !== el) el.value = arr[0] || "";
     });
