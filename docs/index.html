@@ -20,7 +20,7 @@ body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.XLSX_SRC = "xlsx.full.min.js"; window.APP_BUILD = "21b74ae49a";</script>
+<script>window.XLSX_SRC = "xlsx.full.min.js"; window.APP_BUILD = "755a8592d7";</script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -106,7 +106,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, [contenteditabl
 
 .secs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; margin-bottom: 12px; scrollbar-width: none; }
 .secs::-webkit-scrollbar { display: none; }
-.chip { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 14px; font-weight: 500; font-size: .88rem; color: var(--muted); max-width: 16em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 14px; font-weight: 500; font-size: .75rem; color: var(--muted); max-width: 16em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chip[aria-current="true"] { background: var(--chip-on); border-color: var(--chip-on); color: var(--chip-on-ink); }
 .chip.add { border-style: dashed; color: var(--accent); }
 .sechead { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -228,8 +228,8 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 /* month and year set like the month label of the first section */
 .s2-when { display: grid; text-align: center; min-width: 5.6em; line-height: 1.25; font-weight: 600; font-size: .95rem; }
 #footNote {
-  display: block; margin-top: 12px; width: calc(100% + var(--gl) + var(--gr)); height: 38px; min-height: 38px; resize: none; font: inherit; line-height: 1.45; color: var(--ink);
-  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 7px var(--gr) 7px var(--gl); overflow: hidden;
+  display: block; margin-top: 12px; width: calc(100% + var(--gl) + var(--gr)); height: 38px; min-height: 38px; resize: none; font: inherit; font-size: .8rem; line-height: 1.45; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8.5px var(--gr) 8.5px var(--gl); overflow: hidden;
 }
 #footNote:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 .weeks { display: grid; grid-template-columns: max-content 1fr; margin-top: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
@@ -244,8 +244,8 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 .sigpad path, .sig-thumb path { fill: none; stroke: var(--sig-ink); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .s2 #s2Text, .s2 #s3Text {
   /* starts as tall as the month selector beside it and grows downward with the text */
-  width: 100%; height: 38px; min-height: 38px; resize: none; font: inherit; line-height: 1.45; color: var(--ink);
-  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 7px 12px; overflow: hidden;
+  width: 100%; height: 38px; min-height: 38px; resize: none; font: inherit; font-size: .8rem; line-height: 1.45; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8.5px 12px; overflow: hidden;
 }
 .s2 #s2Text:focus, .s2 #s3Text:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
 /* The table scrolls sideways; the two left sub-columns (each a quarter of the visible width)
