@@ -1110,33 +1110,59 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     const touched = new Set(), work = {}, pool = vals3();
     let count = 0;
     const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-    // Semanal: each day column uses a set of 2–3 different values (fewer if the list is shorter),
-    // one per cell; a new set is drawn for the next column and may repeat
-    const weekSet = {};
-    const semanalPick = col => {
-      if (!weekSet[col]) weekSet[col] = shuffle(pool).slice(0, Math.min(pool.length, 2 + Math.floor(Math.random() * 2)));
-      return pick(weekSet[col]);
-    };
+    // One day column at a time (a value is a person doing the cleaning):
+    // - Quincenal rows that fall on that day all get one value, never the one used the last time;
+    // - Semanal rows share 2–3 other values, spread evenly (counts differ by one at most);
+    // - Mensual and Trimestral rotate per row as below.
+    let lastQ = null;   // set below, once the start day is known
+    function dayValues(cells) {
+      const out = new Map();
+      const yellow = cells.filter(c => c.row.color === "yellow"), blue = cells.filter(c => c.row.color === "blue");
+      let q = null;
+      if (yellow.length) {
+        const cand = pool.filter(v => v !== lastQ);
+        q = pick(cand.length ? cand : pool); lastQ = q;
+        yellow.forEach(c => out.set(c, q));
+      }
+      if (blue.length) {
+        const free = pool.filter(v => v !== q), from = free.length ? free : pool;
+        const k = Math.min(from.length, blue.length, 2 + Math.floor(Math.random() * 2));
+        const set = shuffle(from).slice(0, k);
+        const spread = shuffle(blue.map((_, i) => set[i % k]));
+        blue.forEach((c, i) => out.set(c, spread[i]));
+      }
+      cells.filter(c => !out.has(c)).forEach(c => out.set(c, rotatePick(c.row)));
+      return out;
+    }
     // Quincenal, Mensual, Trimestral: per row, the whole list in a shuffled order, then a new
     // shuffled round that never starts with the value just used
     const bags = {}, first3 = dayNum(config.gen3.start), keep = $("rec3").checked;
-    const lastVal = row => { const n = rowLast(row, first3); if (n == null) return null; const { key, day } = kd(n); return rowVals(months[key], row)[day - 1]; };
+    function lastValOf(row) { const n = rowLast(row, first3); if (n == null) return null; const { key, day } = kd(n); return rowVals(months[key], row)[day - 1]; }
     const rotatePick = row => {
-      const b = bags[row.id] || (bags[row.id] = { queue: [], last: lastVal(row) });
+      const b = bags[row.id] || (bags[row.id] = { queue: [], last: lastValOf(row) });
       if (!b.queue.length) {
         b.queue = shuffle(pool);
         if (b.queue.length > 1 && b.queue[0] === b.last) b.queue.push(b.queue.shift());
       }
       return (b.last = b.queue.shift());
     };
-    for (const { key, day, row, on } of g3Cells(config.gen3)) {
-      const k = key + "|" + row.id;
-      const arr = work[k] = work[k] || rowVals(months[key], row).slice();
-      while (arr.length < 31) arr.push("");
-      // recovering only fills the missing days; otherwise the period is generated again
-      if (keep && (!on || (arr[day - 1] && String(arr[day - 1]).trim()))) continue;
-      arr[day - 1] = !on ? "" : row.color === "blue" ? semanalPick(key + "-" + day) : rotatePick(row);
-      if (on) count++;
+    for (const row of rows3()) if (row.color === "yellow") { const v = lastValOf(row); if (v) { lastQ = v; break; } }
+    // cells grouped by day, in date order
+    const byDay = new Map();
+    for (const c of g3Cells(config.gen3)) { const d = c.key + "-" + c.day; if (!byDay.has(d)) byDay.set(d, []); byDay.get(d).push(c); }
+    for (const cells of byDay.values()) {
+      const todo = [];
+      for (const c of cells) {
+        const k = c.key + "|" + c.row.id;
+        const arr = work[k] = work[k] || rowVals(months[c.key], c.row).slice();
+        while (arr.length < 31) arr.push("");
+        // recovering only fills the missing days; otherwise the period is generated again
+        if (keep && (!c.on || (arr[c.day - 1] && String(arr[c.day - 1]).trim()))) continue;
+        if (!c.on) { arr[c.day - 1] = ""; continue; }
+        todo.push(Object.assign({ arr }, c));
+      }
+      const vals = dayValues(todo);
+      todo.forEach(c => { c.arr[c.day - 1] = vals.get(c); count++; });
     }
     for (const k in work) { const [key, id] = k.split("|"); setRowVals(key, rowById(id), work[k]); touched.add(key); }
     touched.forEach(k => writeDoc(monthPath(k), months[k]));
@@ -1152,15 +1178,17 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     const rows = rows3(), fx = config.fixed || {};
     $("s3Table").style.gridTemplateRows = `repeat(${rows.length + 2}, minmax(2.6em, auto))`;
     let h = "";
-    // two columns on the left: the row name, then its frequency. The text column was removed;
-    // its saved text (row.text, label s3c3) is kept untouched in the data.
+    // two columns on the left: the frequency first, then the row name (label 2 sits over the
+    // first column, label 1 over the second). The removed text column's data (row.text, label
+    // s3c3) is kept untouched.
     [1, 2].forEach(c => {
-      h += `<textarea id="s3lab${c}" data-lab="${c}" class="c1 s3-left l${c} boxed at-top" rows="1" style="grid-column:${c};grid-row:1/span 2" aria-label="Columna ${c}, etiqueta"></textarea>`;
+      const col = c === 1 ? 2 : 1;
+      h += `<textarea id="s3lab${c}" data-lab="${c}" class="c1 s3-left l${col} boxed at-top" rows="1" style="grid-column:${col};grid-row:1/span 2" aria-label="Columna ${col}, etiqueta"></textarea>`;
     });
     rows.forEach((row, i) => {
       const r = i + 3, cls = "c1 s3-left boxed at-top";
-      h += `<textarea data-row="${row.id}" data-col="name" class="${cls} l1" rows="1" style="grid-column:1;grid-row:${r}" aria-label="Nombre de la fila ${i + 1}"></textarea>`;
-      h += `<textarea data-row="${row.id}" class="${cls} l2 freq" rows="1" readonly tabindex="-1" style="grid-column:2;grid-row:${r};background:${FREQ[row.color].tint};color:var(--t-ink)" aria-label="${FREQ[row.color].word}">${FREQ[row.color].word[0]}</textarea>`;
+      h += `<textarea data-row="${row.id}" data-col="name" class="${cls} l2" rows="1" style="grid-column:2;grid-row:${r}" aria-label="Nombre de la fila ${i + 1}"></textarea>`;
+      h += `<textarea data-row="${row.id}" class="${cls} l1 freq" rows="1" readonly tabindex="-1" style="grid-column:1;grid-row:${r};background:${FREQ[row.color].tint};color:var(--t-ink)" aria-label="${FREQ[row.color].word}">${FREQ[row.color].word[0]}</textarea>`;
       for (let d = 1; d <= 31; d++)
         h += `<input data-row="${row.id}" data-i="${d - 1}" size="1" readonly class="day pickable${d === 31 ? " last" : ""}" style="grid-row:${r};grid-column:${d + 2};background:${FREQ[row.color].tint};color:var(--t-ink)" aria-label="${esc(rowTitle(row, i))}, día ${d}">`;
     });
