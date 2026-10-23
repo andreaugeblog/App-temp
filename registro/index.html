@@ -1529,8 +1529,8 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 
   // ---- menu ----
   const menu = $("menu");
-  // Ajustes stays out of the menu; holding the ⋮ button for 5 seconds opens the menu with it
-  const HOLD_MS = 5000;
+  // Ajustes stays out of the menu; holding the ⋮ button for 2 seconds opens the menu with it
+  const HOLD_MS = 2000;
   let holdTimer = null, held = false;
   function setMenu(open, withSettings) {
     menu.hidden = !open;
