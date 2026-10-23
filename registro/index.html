@@ -1111,8 +1111,10 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     let count = 0;
     const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
     // One day column at a time (a value is a person doing the cleaning):
-    // - Quincenal rows that fall on that day all get one value, never the one used the last time;
-    // - Semanal rows share 2–3 other values, spread evenly (counts differ by one at most);
+    // - at most 3 values (people) per column; when Quincenal rows fall on that day, one of the three
+    //   is theirs alone (shared by all of them, never the one of the last time) and the Semanal
+    //   rows share the other two; otherwise the Semanal rows share 2–3 values;
+    // - values are spread evenly over the Semanal rows (counts differ by one at most);
     // - Mensual and Trimestral rotate per row as below.
     let lastQ = null;   // set below, once the start day is known
     function dayValues(cells) {
@@ -1126,7 +1128,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
       }
       if (blue.length) {
         const free = pool.filter(v => v !== q), from = free.length ? free : pool;
-        const k = Math.min(from.length, blue.length, 2 + Math.floor(Math.random() * 2));
+        const k = Math.min(from.length, blue.length, q ? 2 : 2 + Math.floor(Math.random() * 2));
         const set = shuffle(from).slice(0, k);
         const spread = shuffle(blue.map((_, i) => set[i % k]));
         blue.forEach((c, i) => out.set(c, spread[i]));
