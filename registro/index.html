@@ -448,6 +448,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     <h2 id="set3Title">Generar valores</h2>
     <p class="sub">Desde el día de inicio (hoy, si no lo cambias) hasta hoy, en la columna 4. Cada frecuencia cuenta desde la última vez que se generó su fila. Quincenal, mensual y trimestral van rotando por toda la lista sin repetir el valor anterior. Lo que ya hay en esas filas desde el día de inicio se borra y se genera de nuevo.</p>
     <label class="field"><span>Día de inicio</span><input type="date" id="g3Start" class="num" style="width:auto;text-align:left"></label>
+    <label class="field"><span>Quincenal empieza</span><select id="g3QFrom"><option value="start">el día de inicio</option><option value="next">la semana siguiente</option></select></label>
     <label class="check"><input type="checkbox" id="rec3"> Recuperar días pendientes (desde el último día generado de cada fila)</label>
     <div class="field"><span>Valores generados</span>
       <p class="sub" style="margin:0">Letras o letras con número. Cada casilla generada recibe uno de estos valores al azar.</p>
@@ -1040,7 +1041,8 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   $("g3Rows").addEventListener("pointercancel", endDrag);
 
   // ---- generation ----
-  const g3Defaults = () => ({ start: todayIso() });
+  // qFrom: Quincenal rows without earlier values start on the start day ("start") or 7 days later ("next")
+  const g3Defaults = () => ({ start: todayIso(), qFrom: "start" });
   // the last day before `before` on which a row has a value
   function rowLast(row, before) {
     for (let n = before - 1; n > before - LOOKBACK; n--) { const { key, day } = kd(n); const v = rowVals(months[key], row)[day - 1]; if (v != null && String(v).trim()) return n; }
@@ -1055,7 +1057,8 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
       const from = anchor != null ? kd(anchor).key : kd(first).key, gap = monthsBetween(from, key);
       return anchor != null ? gap > 0 && gap % f.months === 0 : gap % f.months === 0;
     }
-    return anchor != null ? n > anchor && (n - anchor) % f.every === 0 : (n - first) % f.every === 0;
+    if (anchor == null && row.color === "yellow" && (config.gen3 || {}).qFrom === "next") first += 7;
+    return anchor != null ? n > anchor && (n - anchor) % f.every === 0 : n >= first && (n - first) % f.every === 0;
   }
   function g3Cells(g) {
     const out = [], first = dayNum(g.start), last = dayNum(todayIso());
@@ -1081,7 +1084,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     if ($("rec3").checked) $("g3Start").value = isoOf(Math.min(from, t));
   }
   function summarize3() {
-    const g = config.gen3 = Object.assign(g3Defaults(), config.gen3 || {}, $("g3Start").value ? { start: $("g3Start").value } : {});
+    const g = config.gen3 = Object.assign(g3Defaults(), config.gen3 || {}, $("g3Start").value ? { start: $("g3Start").value } : {}, { qFrom: $("g3QFrom").value });
     const on = g3Cells(g).filter(x => x.on);
     const days = new Set(on.map(x => x.key + x.day)).size;
     const status = rows3().map((row, i) => {
@@ -1097,12 +1100,14 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   function openSettings3() {
     const g = Object.assign(g3Defaults(), config.gen3 || {});
     $("g3Start").value = todayIso(); $("g3Start").disabled = false; $("rec3").checked = false;
+    $("g3QFrom").value = g.qFrom === "next" ? "next" : "start";
     $("g3Rules").innerHTML = Object.values(FREQ).map(f => `<b>${f.word}</b>: ${f.text}`).join("<br>");
     drawRows3(); drawVals();
     summarize3();
     $("set3Scrim").hidden = false;
   }
   $("g3Start").addEventListener("input", () => { summarize3(); saveConfig(); });
+  $("g3QFrom").addEventListener("input", () => { summarize3(); saveConfig(); });
   $("rec3").addEventListener("input", () => { setRec3(); summarize3(); saveConfig(); });
   $("set3Close").onclick = () => { $("set3Scrim").hidden = true; render(); };
   $("g3Go").onclick = () => {
