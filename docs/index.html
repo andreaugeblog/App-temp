@@ -20,7 +20,7 @@ body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.XLSX_SRC = "xlsx.full.min.js"; window.APP_BUILD = "84dc67d6f7";</script>
+<script>window.XLSX_SRC = "xlsx.full.min.js"; window.APP_BUILD = "6fc3285810";</script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -439,7 +439,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 <div class="scrim" id="setScrim" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="setTitle">
     <h2 id="setTitle">Generar valores</h2>
-    <p class="sub">Rellena desde el día de inicio hasta hoy. Al abrir, el día de inicio es siempre hoy.</p>
+    <p class="sub">Rellena desde el día de inicio hasta hoy. Al abrir, si faltan días desde el último con valores, empieza el día siguiente a ese; si no, hoy.</p>
     <label class="field"><span>Día de inicio</span><input type="date" id="startDate" class="num" style="width:auto;text-align:left"></label>
     <label class="check"><input type="checkbox" id="rec1"> Recuperar días pendientes (desde el último día generado)</label>
     <div class="field"><span>Elementos normales</span>
@@ -469,10 +469,10 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 <div class="scrim" id="set3Scrim" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="set3Title">
     <h2 id="set3Title">Generar valores</h2>
-    <p class="sub">Desde el día de inicio (hoy, si no lo cambias) hasta hoy, en la columna 4. Cada frecuencia cuenta desde la última vez que se generó su fila. Quincenal, mensual y trimestral van rotando por toda la lista sin repetir el valor anterior. Lo que ya hay en esas filas desde el día de inicio se borra y se genera de nuevo.</p>
+    <p class="sub">Desde el día de inicio (al abrir: el primer día que falta en alguna fila; si no falta nada, hoy) hasta hoy, en la columna 4. Cada frecuencia cuenta desde la última vez que se generó su fila. Quincenal, mensual y trimestral van rotando por toda la lista sin repetir el valor anterior. Lo que ya hay en esas filas desde el día de inicio se borra y se genera de nuevo, salvo al recuperar días pendientes.</p>
     <label class="field"><span>Día de inicio</span><input type="date" id="g3Start" class="num" style="width:auto;text-align:left"></label>
     <label class="field"><span>Quincenal empieza</span><select id="g3QFrom"><option value="start">el día de inicio</option><option value="next">la semana siguiente</option></select></label>
-    <label class="check"><input type="checkbox" id="rec3"> Recuperar días pendientes (desde el último día generado de cada fila)</label>
+    <label class="check"><input type="checkbox" id="rec3"> Recuperar días pendientes (rellena solo lo que falta; cada fila sigue desde su último valor)</label>
     <div class="field"><span>Valores generados</span>
       <p class="sub" style="margin:0">Letras o letras con número. Cada casilla generada recibe uno de estos valores al azar.</p>
       <div class="vals" id="g3Vals"></div>
@@ -494,9 +494,9 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 <div class="scrim" id="set2Scrim" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="set2Title">
     <h2 id="set2Title">Generar valores</h2>
-    <p class="sub">Desde el día de inicio (hoy, si no lo cambias) hasta hoy, en las filas marcadas en amarillo: unas columnas con valores, otras vacías, contando desde la última vez que se generó. Lo que ya hay en ese periodo se borra y se genera de nuevo.</p>
+    <p class="sub">Desde el día de inicio (al abrir: el primer día que falta; si no falta nada, hoy) hasta hoy, en las filas marcadas en amarillo: unas columnas con valores, otras vacías, contando desde la última vez que se generó. Lo que ya hay en ese periodo se borra y se genera de nuevo, salvo al recuperar días pendientes.</p>
     <label class="field"><span>Día de inicio</span><input type="date" id="g2Start" class="num" style="width:auto;text-align:left"></label>
-    <label class="check"><input type="checkbox" id="rec2"> Recuperar días pendientes (desde el último día generado)</label>
+    <label class="check"><input type="checkbox" id="rec2"> Recuperar días pendientes (rellena solo las columnas que faltan, desde el último grupo generado)</label>
     <div class="field"><span>Valores por fila marcada</span><div class="summary" id="g2Rules" style="margin:0"></div></div>
     <div class="field"><span>Columnas</span>
       <div class="inline"><input class="num" id="g2On" inputmode="numeric" style="width:4em"> con valores, luego <input class="num" id="g2Off" inputmode="numeric" style="width:4em"> vacías</div>
@@ -1083,14 +1083,35 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     if (anchor == null && row.color === "yellow" && (config.gen3 || {}).qFrom === "next") first += 7;
     return anchor != null ? n > anchor && (n - anchor) % f.every === 0 : n >= first && (n - first) % f.every === 0;
   }
-  function g3Cells(g) {
+  // keep: recovering, so days with a value stay and each row carries on from its own values
+  function g3Cells(g, keep) {
     const out = [], first = dayNum(g.start), last = dayNum(todayIso());
     const anchors = new Map(rows3().map(row => [row.id, rowLast(row, first)]));
     for (let n = first; n <= last; n++) {
       const { key, day } = kd(n);
-      for (const row of rows3()) out.push({ key, day, row, on: rowOn(row, n, anchors.get(row.id), first) });
+      for (const row of rows3()) {
+        const v = rowVals(months[key], row)[day - 1];
+        if (keep && v != null && String(v).trim()) { anchors.set(row.id, n); out.push({ key, day, row, on: false }); continue; }
+        const on = rowOn(row, n, anchors.get(row.id), first);
+        if (keep && on) anchors.set(row.id, n);
+        out.push({ key, day, row, on });
+      }
     }
     return out;
+  }
+  // the last day with a value and the first day a row should have had one since its last value
+  // (each row on its own frequency, so Quincenal/Mensual never pull the others back)
+  function pending3() {
+    const t = dayNum(todayIso());
+    let last = null, from = null;
+    for (const row of rows3()) {
+      const a = rowLast(row, t + 1);
+      if (a == null) continue;
+      last = Math.max(last ?? a, a);
+      if (rowOff(row, kd(t).key, kd(t).day)) continue;
+      for (let n = a + 1; n <= t; n++) if (rowOn(row, n, a, a)) { from = Math.min(from ?? n, n); break; }
+    }
+    return { last, from };
   }
   // per row: whether it gets a value today, else the next day it will
   function rowStatus(row, g) {
@@ -1100,21 +1121,19 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     return {};
   }
   function setRec3() {
-    const t = dayNum(todayIso());
-    const lasts = rows3().map(r => rowLast(r, t + 1)).filter(x => x != null);
-    const from = lasts.length ? Math.min(...lasts) + 1 : t;
+    const t = dayNum(todayIso()), { from } = pending3();
     $("g3Start").disabled = $("rec3").checked;
-    if ($("rec3").checked) $("g3Start").value = isoOf(Math.min(from, t));
+    if ($("rec3").checked) $("g3Start").value = isoOf(from != null && from < t ? from : t);
   }
   function summarize3() {
     const g = config.gen3 = Object.assign(g3Defaults(), config.gen3 || {}, $("g3Start").value ? { start: $("g3Start").value } : {}, { qFrom: $("g3QFrom").value });
-    const on = g3Cells(g).filter(x => x.on);
+    const on = g3Cells(g, $("rec3").checked).filter(x => x.on), { last } = pending3();
     const days = new Set(on.map(x => x.key + x.day)).size;
     const status = rows3().map((row, i) => {
       const st = rowStatus(row, g);
       return `<span style="color:${FREQ[row.color].mark}">●</span> ${esc(rowTitle(row, i))}: ` + (st.today ? "<b>hoy</b>" : st.next != null ? `todavía no, próximo el ${longDate(st.next)}` : "sin fecha");
     }).join("<br>");
-    $("g3Summary").innerHTML = (!rows3().length ? "No hay filas que rellenar."
+    $("g3Summary").innerHTML = (last != null ? `Último día con valores: <b>${longDate(last)}</b>.<br>` : "") + (!rows3().length ? "No hay filas que rellenar."
       : dayNum(g.start) > dayNum(todayIso()) ? "El día de inicio es posterior a hoy: no hay nada que rellenar todavía."
       : on.length ? (g.start === todayIso() ? `Hoy se generan <b>${on.length} ${on.length === 1 ? "valor" : "valores"}</b>.` : `Rellenará <b>${days} ${days === 1 ? "día" : "días"}</b> desde el <b>${+g.start.slice(8)} de ${label(g.start.slice(0, 7))}</b> hasta hoy.`)
       : "<b>Hoy no toca generar en ninguna fila.</b>") + (rows3().length ? "<br><br>" + status : "");
@@ -1122,7 +1141,10 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   }
   function openSettings3() {
     const g = Object.assign(g3Defaults(), config.gen3 || {});
-    $("g3Start").value = todayIso(); $("g3Start").disabled = false; $("rec3").checked = false;
+    $("g3Start").value = todayIso(); $("g3Start").disabled = false;
+    // with days missing in some row since its last value, start there and fill only those
+    const { from } = pending3();
+    $("rec3").checked = from != null && from < dayNum(todayIso()); setRec3();
     $("g3QFrom").value = g.qFrom === "next" ? "next" : "start";
     $("g3Rules").innerHTML = Object.values(FREQ).map(f => `<b>${f.word}</b>: ${f.text}`).join("<br>");
     drawRows3(); drawVals();
@@ -1179,7 +1201,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     for (const row of rows3()) if (row.color === "yellow") { const v = lastValOf(row); if (v) { lastQ = v; break; } }
     // cells grouped by day, in date order
     const byDay = new Map();
-    for (const c of g3Cells(config.gen3)) { const d = c.key + "-" + c.day; if (!byDay.has(d)) byDay.set(d, []); byDay.get(d).push(c); }
+    for (const c of g3Cells(config.gen3, keep)) { const d = c.key + "-" + c.day; if (!byDay.has(d)) byDay.set(d, []); byDay.get(d).push(c); }
     for (const cells of byDay.values()) {
       const todo = [];
       for (const c of cells) {
@@ -1646,14 +1668,19 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     }
     return null;
   }
+  // the day after the last one with values, when days are missing before today
+  function pending1() {
+    const last = lastDay1(), t = dayNum(todayIso());
+    return last != null && last + 1 < t ? last + 1 : null;
+  }
   function setRec1() {
     const last = lastDay1(), t = dayNum(todayIso());
     $("startDate").disabled = $("rec1").checked;
     if ($("rec1").checked) $("startDate").value = isoOf(last != null && last < t ? last + 1 : t);
   }
   function openSettings() {
-    // every time the settings open, generation starts today
-    $("startDate").value = todayIso(); $("startDate").disabled = false; $("rec1").checked = false;
+    // every time the settings open, generation starts on the first missing day, else today
+    $("startDate").value = todayIso(); $("startDate").disabled = false; $("rec1").checked = pending1() != null; setRec1();
     $("aMin").value = fmt(config.ranges.a[0]); $("aMax").value = fmt(config.ranges.a[1]);
     $("bMin").value = fmt(config.ranges.b[0]); $("bMax").value = fmt(config.ranges.b[1]);
     $("overwrite").checked = !!config.overwrite;
@@ -1691,9 +1718,10 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     const onlyToday = list.length === 1 && from === now.getDate();
     const range = onlyToday ? `<b>hoy, ${now.getDate()} de ${label(curKey)}</b>,`
       : list.length > 1 ? `del <b>${from} de ${label(list[0])}</b> al <b>${now.getDate()} de ${label(curKey)}</b>` : `del ${from} al <b>${now.getDate()} de ${label(curKey)}</b>`;
-    const r = config.ranges;
+    const r = config.ranges, last = lastDay1(), t = dayNum(todayIso());
+    const lastLine = last == null ? "" : `Último día con valores: <b>${longDate(last)}</b>` + (last + 1 < t ? ` (faltan ${t - last} días hasta hoy).<br>` : ".<br>");
     $("summary").innerHTML = n
-      ? `Rellenará ${range} para <b>${n} ${n === 1 ? "elemento" : "elementos"}</b> y corregirá los valores fuera de franja.<br>Valores entre ${fmt(r.a[0])} y ${fmt(r.a[1])}` + (n > 2 ? `, los dos últimos entre ${fmt(r.b[0])} y ${fmt(r.b[1])}.` : `; con ${n} ${n === 1 ? "elemento" : "elementos"} todos usan ${fmt(r.b[0])}–${fmt(r.b[1])}.`)
+      ? lastLine + `Rellenará ${range} para <b>${n} ${n === 1 ? "elemento" : "elementos"}</b> y corregirá los valores fuera de franja.<br>Valores entre ${fmt(r.a[0])} y ${fmt(r.a[1])}` + (n > 2 ? `, los dos últimos entre ${fmt(r.b[0])} y ${fmt(r.b[1])}.` : `; con ${n} ${n === 1 ? "elemento" : "elementos"} todos usan ${fmt(r.b[0])}–${fmt(r.b[1])}.`)
       : "Escribe al menos un nombre en la columna <b>Elemento</b>: las filas sin nombre no se rellenan.";
     $("goBtn").disabled = !n;
   }
@@ -1737,13 +1765,27 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   // where the pattern runs from: the first day of the last generated group before `first`
   // (so it carries on from the last time), or `first` itself when nothing was generated before
   function g2Anchor(g, first) {
+    const cyc = g.on + g.off, full = s => { for (let i = 0; i < g.on; i++) if (!gen2Has(s + i)) return false; return true; };
     for (let n = first - 1; n > first - LOOKBACK; n--) {
       if (!gen2Has(n)) continue;
       let len = 1;
       while (len < g.on && gen2Has(n - len)) len++;
-      return n - len + 1;
+      // a short group may be missing its first columns: line it up with the group before when that fits
+      const a = n - len + 1, b = n - g.on + 1;
+      return len < g.on && !full(a - cyc) && full(b - cyc) ? b : a;
     }
     return first;
+  }
+  // the last generated day and the first day, from the last generated group to today, that should
+  // have values and has none (so a missing column of a group and the groups since are found)
+  function pending2(g) {
+    const t = dayNum(todayIso());
+    let last = null;
+    for (let n = t; n > t - LOOKBACK; n--) if (gen2Has(n)) { last = n; break; }
+    if (last == null) return { last, from: null };
+    const anchor = g2Anchor(g, last + 1);
+    for (let n = anchor; n <= t; n++) if (g2Pos(g, anchor, n) < g.on && !gen2Has(n)) return { last, from: n };
+    return { last, from: null };
   }
   const g2Pos = (g, anchor, n) => ((n - anchor) % (g.on + g.off) + (g.on + g.off)) % (g.on + g.off);
   function g2Days(g) {
@@ -1751,7 +1793,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     for (let n = first; n <= last; n++) {
       const pos = g2Pos(g, anchor, n);
       if (pos >= g.on) continue;
-      out.push(Object.assign(kd(n), { pos, group: Math.floor((n - anchor) / cycle) }));
+      out.push(Object.assign(kd(n), { n, pos, group: Math.floor((n - anchor) / cycle) }));
     }
     return out;
   }
@@ -1761,11 +1803,9 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     return null;
   }
   function setRec2() {
-    const t = dayNum(todayIso());
-    let last = null;
-    for (let n = t; n > t - LOOKBACK; n--) if (gen2Has(n)) { last = n; break; }
+    const t = dayNum(todayIso()), { from } = pending2(readG2());
     $("g2Start").disabled = $("rec2").checked;
-    if ($("rec2").checked) $("g2Start").value = isoOf(last != null && last < t ? last + 1 : t);
+    if ($("rec2").checked) $("g2Start").value = isoOf(from != null && from < t ? from : t);
   }
   function readG2() {
     const g = Object.assign(g2Defaults(), config.gen2 || {});
@@ -1779,15 +1819,21 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   function summarize2() {
     const g = readG2(), days = g2Days(g);
     const fmtD = x => `${x.day} de ${label(x.key)}`;
-    const next = g2Next(g), today = g.start === todayIso();
-    $("g2Summary").innerHTML = dayNum(g.start) > dayNum(todayIso()) ? "El día de inicio es posterior a hoy: no hay nada que rellenar todavía."
+    const next = g2Next(g), today = g.start === todayIso(), { last } = pending2(g);
+    const missing = days.filter(x => !gen2Has(x.n)).length;
+    const lastLine = last == null ? "" : `Último día generado: <b>${longDate(last)}</b>.<br>`;
+    $("g2Summary").innerHTML = lastLine + (dayNum(g.start) > dayNum(todayIso()) ? "El día de inicio es posterior a hoy: no hay nada que rellenar todavía."
+      : $("rec2").checked ? (missing ? `Rellenará <b>${missing} ${missing === 1 ? "día que falta" : "días que faltan"}</b> desde el <b>${fmtD({ key: g.start.slice(0, 7), day: +g.start.slice(8) })}</b> hasta hoy, sin tocar lo que ya hay (${g.on} con valores, ${g.off} vacías).` : "<b>No falta nada</b> hasta hoy." + (next != null ? ` Próximo día con valores: <b>${longDate(next)}</b>.` : ""))
       : days.length ? (today ? "Hoy toca: rellenará <b>hoy</b>" : `Borrará las filas marcadas desde el <b>${fmtD({ key: g.start.slice(0, 7), day: +g.start.slice(8) })}</b> hasta hoy y rellenará <b>${days.length} días</b>`) + ` (${g.on} con valores, ${g.off} vacías).`
-      : `<b>Hoy no toca generar</b>: todavía no han pasado las ${g.off} columnas vacías desde la última vez.` + (next != null ? ` Próximo día con valores: <b>${longDate(next)}</b>.` : "");
-    $("g2Go").disabled = !days.length;
+      : `<b>Hoy no toca generar</b>: todavía no han pasado las ${g.off} columnas vacías desde la última vez.` + (next != null ? ` Próximo día con valores: <b>${longDate(next)}</b>.` : ""));
+    $("g2Go").disabled = $("rec2").checked ? !missing : !days.length;
   }
   function openSettings2() {
     const g = Object.assign(g2Defaults(), config.gen2 || {});
-    $("g2Start").value = todayIso(); $("g2Start").disabled = false; $("rec2").checked = false; $("g2On").value = g.on; $("g2Off").value = g.off;
+    $("g2Start").value = todayIso(); $("g2Start").disabled = false; $("g2On").value = g.on; $("g2Off").value = g.off;
+    // with columns missing since the last generated group, start there and fill only those
+    const { from } = pending2(readG2());
+    $("rec2").checked = from != null && from < dayNum(todayIso()); setRec2();
     $("g2Rules").innerHTML = GEN_ROWS.map((r, i) => `<b>${i + 1}ª</b> ${GEN_RULES[r].text}`).join("<br>");
     summarize2();
     $("set2Scrim").hidden = false;
@@ -1798,8 +1844,10 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   $("g2Go").onclick = () => {
     const g = readG2(), touched = new Set(), plan = g2Days(g);
     let count = 0;
-    // a new generation replaces everything in the marked rows from the start day to today
-    for (const { key, day } of g2Period(g)) {
+    const keep = $("rec2").checked;
+    // a new generation replaces everything in the marked rows from the start day to today;
+    // recovering keeps what is there and fills only the missing columns
+    if (!keep) for (const { key, day } of g2Period(g)) {
       const m = months[key] = Object.assign({}, months[key]);
       for (const r of GEN_ROWS) {
         if (!Array.isArray(m["d" + r])) continue;
@@ -1809,12 +1857,21 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
       touched.add(key);
     }
     const groupVal = {};   // "row:group" -> value shared by the columns of one group
-    for (const { key, day, pos, group } of plan) {
-      const m = months[key];
+    const filled = v => v != null && String(v).trim() !== "";
+    for (const { key, day, n, pos, group } of plan) {
+      const m = months[key] = Object.assign({}, months[key]);
       for (const r of GEN_ROWS) {
         const arr = m["d" + r] = (Array.isArray(m["d" + r]) ? m["d" + r] : []).slice();
         while (arr.length < 31) arr.push("");
+        if (keep && filled(arr[day - 1])) continue;
         const rule = GEN_RULES[r];
+        // a group already partly there keeps its shared value
+        if (keep && rule.shared && !((r + ":" + group) in groupVal)) {
+          for (let i = 0; i < g.on; i++) {
+            const x = kd(n - pos + i), v = ((months[x.key] || {})["d" + r] || [])[x.day - 1];
+            if (filled(v)) { groupVal[r + ":" + group] = v; break; }
+          }
+        }
         arr[day - 1] = rule.shared ? (groupVal[r + ":" + group] ??= rule.shared()) : rule.make(pos);
         if (Array.isArray(m.man2)) m.man2 = m.man2.filter(c => c !== r + ":" + day);
         count++; touched.add(key);
