@@ -20,7 +20,7 @@ body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.XLSX_SRC = "xlsx.full.min.js"; window.APP_BUILD = "6fc3285810";</script>
+<script>window.XLSX_SRC = "xlsx.full.min.js"; window.APP_BUILD = "314dfcd356";</script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1122,7 +1122,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   }
   function setRec3() {
     const t = dayNum(todayIso()), { from } = pending3();
-    $("g3Start").disabled = $("rec3").checked;
+    $("g3Start").disabled = false;
     if ($("rec3").checked) $("g3Start").value = isoOf(from != null && from < t ? from : t);
   }
   function summarize3() {
@@ -1675,7 +1675,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   }
   function setRec1() {
     const last = lastDay1(), t = dayNum(todayIso());
-    $("startDate").disabled = $("rec1").checked;
+    $("startDate").disabled = false;
     if ($("rec1").checked) $("startDate").value = isoOf(last != null && last < t ? last + 1 : t);
   }
   function openSettings() {
@@ -1804,7 +1804,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   }
   function setRec2() {
     const t = dayNum(todayIso()), { from } = pending2(readG2());
-    $("g2Start").disabled = $("rec2").checked;
+    $("g2Start").disabled = false;
     if ($("rec2").checked) $("g2Start").value = isoOf(from != null && from < t ? from : t);
   }
   function readG2() {

@@ -1099,7 +1099,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   }
   function setRec3() {
     const t = dayNum(todayIso()), { from } = pending3();
-    $("g3Start").disabled = $("rec3").checked;
+    $("g3Start").disabled = false;
     if ($("rec3").checked) $("g3Start").value = isoOf(from != null && from < t ? from : t);
   }
   function summarize3() {
@@ -1652,7 +1652,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   }
   function setRec1() {
     const last = lastDay1(), t = dayNum(todayIso());
-    $("startDate").disabled = $("rec1").checked;
+    $("startDate").disabled = false;
     if ($("rec1").checked) $("startDate").value = isoOf(last != null && last < t ? last + 1 : t);
   }
   function openSettings() {
@@ -1781,7 +1781,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   }
   function setRec2() {
     const t = dayNum(todayIso()), { from } = pending2(readG2());
-    $("g2Start").disabled = $("rec2").checked;
+    $("g2Start").disabled = false;
     if ($("rec2").checked) $("g2Start").value = isoOf(from != null && from < t ? from : t);
   }
   function readG2() {
