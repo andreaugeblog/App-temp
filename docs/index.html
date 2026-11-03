@@ -20,7 +20,7 @@ body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.XLSX_SRC = "xlsx.full.min.js"; window.APP_BUILD = "aefa727b18";</script>
+<script>window.XLSX_SRC = "xlsx.full.min.js"; window.APP_BUILD = "8d6706d4f5";</script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -109,6 +109,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, [contenteditabl
 .chip { flex: none; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 14px; font-weight: 500; font-size: .75rem; color: var(--muted); max-width: 16em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .chip[aria-current="true"] { background: var(--chip-on); border-color: var(--chip-on); color: var(--chip-on-ink); }
 .chip.add { border-style: dashed; color: var(--accent); }
+.setTabs { display: flex; flex-wrap: wrap; gap: 6px; margin: -4px 0 14px; }
 .sechead { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 @media (max-width: 560px) {
   .month { flex: 1; justify-content: space-between; }
@@ -443,6 +444,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 <div class="scrim" id="setScrim" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="setTitle">
     <h2 id="setTitle">Generar valores</h2>
+    <div class="setTabs" role="tablist" aria-label="Sección"></div>
     <p class="sub">Rellena desde el día de inicio hasta hoy (o hasta el día que elijas en «Hasta el día»). Al abrir, si faltan días desde el último con valores, empieza el día siguiente a ese; si no, hoy.</p>
     <label class="field"><span>Día de inicio</span><input type="date" id="startDate" class="num" style="width:auto;text-align:left"></label>
     <div class="check until"><label><input type="checkbox" id="until1"> Hasta el día</label><input type="date" id="untilDate1" class="num" disabled></div>
@@ -474,6 +476,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 <div class="scrim" id="set3Scrim" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="set3Title">
     <h2 id="set3Title">Generar valores</h2>
+    <div class="setTabs" role="tablist" aria-label="Sección"></div>
     <p class="sub">Desde el día de inicio (al abrir: el primer día que falta en alguna fila; si no falta nada, hoy) hasta hoy o hasta el día elegido, en la columna 4. Cada frecuencia cuenta desde la última vez que se generó su fila. Quincenal, mensual y trimestral van rotando por toda la lista sin repetir el valor anterior. Lo que ya hay en esas filas desde el día de inicio se borra y se genera de nuevo, salvo al recuperar días pendientes.</p>
     <label class="field"><span>Día de inicio</span><input type="date" id="g3Start" class="num" style="width:auto;text-align:left"></label>
     <div class="check until"><label><input type="checkbox" id="until3"> Hasta el día</label><input type="date" id="untilDate3" class="num" disabled></div>
@@ -500,6 +503,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 <div class="scrim" id="set2Scrim" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="set2Title">
     <h2 id="set2Title">Generar valores</h2>
+    <div class="setTabs" role="tablist" aria-label="Sección"></div>
     <p class="sub">Desde el día de inicio (al abrir: el primer día que falta; si no falta nada, hoy) hasta hoy o hasta el día elegido, en las filas marcadas en amarillo: unas columnas con valores, otras vacías, contando desde la última vez que se generó. Lo que ya hay en ese periodo se borra y se genera de nuevo, salvo al recuperar días pendientes.</p>
     <label class="field"><span>Día de inicio</span><input type="date" id="g2Start" class="num" style="width:auto;text-align:left"></label>
     <div class="check until"><label><input type="checkbox" id="until2"> Hasta el día</label><input type="date" id="untilDate2" class="num" disabled></div>
@@ -1642,7 +1646,21 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   };
   $("instClose").onclick = () => { $("instScrim").hidden = true; };
   // the generation settings belong to the numbers section: open it there from any section
-  $("openSettings").onclick = () => { setMenu(false); openPin(() => sec().type === "s2" ? openSettings2() : sec().type === "s3" ? openSettings3() : openSettings()); };
+  // the settings of the active section, with tabs on top to move to another section's settings
+  function openSectionSettings() {
+    document.querySelectorAll(".setTabs").forEach(el => {
+      el.innerHTML = sections.map((x, i) => `<button class="chip" role="tab" data-sid="${x.id}" aria-current="${x.id === active}" aria-selected="${x.id === active}">${esc((x.name || "").trim() || "Sección " + (i + 1))}</button>`).join("");
+    });
+    sec().type === "s2" ? openSettings2() : sec().type === "s3" ? openSettings3() : openSettings();
+  }
+  document.querySelectorAll(".setTabs").forEach(el => el.addEventListener("click", e => {
+    const b = e.target.closest("[data-sid]");
+    if (!b || b.dataset.sid === active) return;
+    ["setScrim", "set2Scrim", "set3Scrim"].forEach(id => $(id).hidden = true);
+    switchSection(b.dataset.sid);
+    openSectionSettings();
+  }));
+  $("openSettings").onclick = () => { setMenu(false); openPin(openSectionSettings); };
   $("openDelete").onclick = () => { setMenu(false); openPin(openDelete); };
   $("openImport").onclick = () => { setMenu(false); openImport(); };
 
