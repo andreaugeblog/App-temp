@@ -20,7 +20,7 @@ body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.XLSX_SRC = "xlsx.full.min.js"; window.APP_BUILD = "314dfcd356";</script>
+<script>window.XLSX_SRC = "xlsx.full.min.js"; window.APP_BUILD = "c653d89e14";</script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -560,7 +560,9 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 <div class="scrim" id="expScrim" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="expTitle">
     <h2 id="expTitle">Exportar</h2>
-    <p class="sub">Se exporta todo en un solo archivo Excel: las dos secciones, todos los meses, lo escrito en cada celda, los nombres y los ajustes. Quien lo importe tendrá la app exactamente igual. El archivo también se abre con Hojas de cálculo de Google.</p>
+    <p class="sub" id="expRemind" hidden></p>
+    <p class="sub">Se exporta todo en un solo archivo Excel: todas las secciones y todos los meses, lo escrito en cada celda y en los recuadros, los nombres, los valores y todos los ajustes. Quien lo importe tendrá la app exactamente igual. El archivo también se abre con Hojas de cálculo de Google.</p>
+    <p class="sub"><b>Copia en Google Drive:</b> toca <b>Exportar todo</b> y, en la lista que aparece, elige <b>Drive</b> (Guardar en Drive).</p>
     <div class="mlist" id="expList"></div>
     <button class="go" id="expGo">Exportar todo</button>
     <div class="row-x"><button class="link" id="expClose">Cerrar</button></div>
@@ -2219,6 +2221,25 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     }
     return n;
   };
+  // Backup reminder (only where data lives on the phone): every 10 openings without an export,
+  // the export opens by itself. LS + ":copia" = { opens since the last export, at: last export }
+  const BK = LS + ":copia";
+  function bkGet() { try { return Object.assign({ opens: 0, at: null }, JSON.parse(localStorage.getItem(BK) || "null")); } catch (e) { return { opens: 0, at: null }; } }
+  function bkSet(v) { try { localStorage.setItem(BK, JSON.stringify(v)); } catch (e) {} }
+  const BK_EVERY = 10;
+  function backupDone() { bkSet({ opens: 0, at: new Date().toISOString() }); $("expRemind").hidden = true; }
+  function remindBackup() {
+    const b = bkGet();
+    $("expTitle").textContent = "Copia de seguridad";
+    $("expRemind").innerHTML = `Has abierto la app ${b.opens} veces desde la última copia` + (b.at ? ` (${longDate(dayNum(b.at.slice(0, 10)))})` : "") + ". Los datos están solo en este teléfono: guarda ahora una copia de todo en Google Drive.";
+    $("expRemind").hidden = false; $("expClose").textContent = "Más tarde";
+    openExport();
+  }
+  $("expScrim").addEventListener("click", e => {
+    // "later": ask again after 3 more openings
+    if (e.target.id === "expClose" && !$("expRemind").hidden) { bkSet(Object.assign(bkGet(), { opens: BK_EVERY - 3 })); $("expRemind").hidden = true; }
+    if (e.target.id === "expClose") { $("expTitle").textContent = "Exportar"; $("expClose").textContent = "Cerrar"; }
+  }, true);
   async function openExport() {
     $("expList").innerHTML = '<p class="empty">Preparando…</p>';
     $("expScrim").hidden = false;
@@ -2230,7 +2251,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
       return `<label><span>${esc(x.name.trim() || "Sección sin nombre")}</span><span class="cnt">${keys.length} ${keys.length === 1 ? "mes" : "meses"} · ${n} valores</span></label>`;
     }).join("");
   }
-  $("openExport").onclick = () => { setMenu(false); openExport(); };
+  $("openExport").onclick = () => { setMenu(false); $("expTitle").textContent = "Exportar"; $("expClose").textContent = "Cerrar"; $("expRemind").hidden = true; openExport(); };
   $("expClose").onclick = () => { $("expScrim").hidden = true; };
 
   let xlsxLib;
@@ -2327,7 +2348,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     const dl = window.claude && window.claude.use ? await window.claude.use("downloads") : null;
     if (dl) {
       await dl.save({ filename, data });
-      $("expScrim").hidden = true; toast("Archivo exportado.");
+      backupDone(); $("expScrim").hidden = true; toast("Archivo exportado.");
       return;
     }
     // outside claude.ai: the phone's share sheet (WhatsApp, email, Files…), else a download
@@ -2336,7 +2357,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
         await navigator.share({ files: [file], title: filename });
-        $("expScrim").hidden = true; toast("Archivo listo para enviar.");
+        backupDone(); $("expScrim").hidden = true; toast("Copia guardada.");
         return;
       } catch (e) {
         if (e && e.name === "AbortError") { toast("Exportación cancelada."); return; }
@@ -2346,7 +2367,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     const a = Object.assign(document.createElement("a"), { href: url, download: filename });
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
-    $("expScrim").hidden = true; toast("Archivo exportado.");
+    backupDone(); $("expScrim").hidden = true; toast("Archivo exportado.");
   }
 
   let toastT;
@@ -2430,8 +2451,10 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   ready.then(d => {
     db = d;
     if (!db) {
-      $("status").textContent = "Datos guardados en este dispositivo. Para pasárselos a alguien usa Exportar, y esa persona Importar.";
+      $("status").textContent = "Datos guardados solo en este teléfono, sin internet. Cada 10 aperturas te recuerda guardar una copia en Google Drive (Exportar).";
       if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+      const b = bkGet(); b.opens++; bkSet(b);
+      if (b.opens >= BK_EVERY) remindBackup();
       return;
     }
     $("status").textContent = "Guardado automático activado.";
