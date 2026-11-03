@@ -20,7 +20,7 @@ body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<script>window.XLSX_SRC = "xlsx.full.min.js"; window.APP_BUILD = "c653d89e14";</script>
+<script>window.XLSX_SRC = "xlsx.full.min.js"; window.APP_BUILD = "aefa727b18";</script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -175,6 +175,10 @@ select, .num { font: inherit; color: var(--ink); background: var(--bg); border: 
 .num { width: 6em; font-family: var(--f-num); text-align: center; }
 .check { display: flex; gap: 10px; align-items: center; font-size: .92rem; margin-bottom: 16px; }
 .check input { width: 18px; height: 18px; accent-color: var(--accent); }
+.check.until { flex-wrap: wrap; }
+.check.until label { display: flex; gap: 10px; align-items: center; }
+.check.until input[type=date] { width: auto; height: auto; text-align: left; }
+.check.until input[type=date]:disabled { opacity: .45; }
 .summary { background: var(--bg); border-radius: 10px; padding: 12px 14px; font-size: .9rem; color: var(--muted); margin-bottom: 16px; line-height: 1.45; }
 .summary b { color: var(--ink); font-weight: 600; }
 .go { width: 100%; height: 54px; border: 0; border-radius: 12px; background: var(--accent); color: var(--accent-ink); font-size: 1.1rem; font-weight: 700; letter-spacing: .02em; }
@@ -439,8 +443,9 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 <div class="scrim" id="setScrim" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="setTitle">
     <h2 id="setTitle">Generar valores</h2>
-    <p class="sub">Rellena desde el día de inicio hasta hoy. Al abrir, si faltan días desde el último con valores, empieza el día siguiente a ese; si no, hoy.</p>
+    <p class="sub">Rellena desde el día de inicio hasta hoy (o hasta el día que elijas en «Hasta el día»). Al abrir, si faltan días desde el último con valores, empieza el día siguiente a ese; si no, hoy.</p>
     <label class="field"><span>Día de inicio</span><input type="date" id="startDate" class="num" style="width:auto;text-align:left"></label>
+    <div class="check until"><label><input type="checkbox" id="until1"> Hasta el día</label><input type="date" id="untilDate1" class="num" disabled></div>
     <label class="check"><input type="checkbox" id="rec1"> Recuperar días pendientes (desde el último día generado)</label>
     <div class="field"><span>Elementos normales</span>
       <div class="inline">de <input class="num" id="aMin" inputmode="decimal"> a <input class="num" id="aMax" inputmode="decimal"></div>
@@ -469,8 +474,9 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 <div class="scrim" id="set3Scrim" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="set3Title">
     <h2 id="set3Title">Generar valores</h2>
-    <p class="sub">Desde el día de inicio (al abrir: el primer día que falta en alguna fila; si no falta nada, hoy) hasta hoy, en la columna 4. Cada frecuencia cuenta desde la última vez que se generó su fila. Quincenal, mensual y trimestral van rotando por toda la lista sin repetir el valor anterior. Lo que ya hay en esas filas desde el día de inicio se borra y se genera de nuevo, salvo al recuperar días pendientes.</p>
+    <p class="sub">Desde el día de inicio (al abrir: el primer día que falta en alguna fila; si no falta nada, hoy) hasta hoy o hasta el día elegido, en la columna 4. Cada frecuencia cuenta desde la última vez que se generó su fila. Quincenal, mensual y trimestral van rotando por toda la lista sin repetir el valor anterior. Lo que ya hay en esas filas desde el día de inicio se borra y se genera de nuevo, salvo al recuperar días pendientes.</p>
     <label class="field"><span>Día de inicio</span><input type="date" id="g3Start" class="num" style="width:auto;text-align:left"></label>
+    <div class="check until"><label><input type="checkbox" id="until3"> Hasta el día</label><input type="date" id="untilDate3" class="num" disabled></div>
     <label class="field"><span>Quincenal empieza</span><select id="g3QFrom"><option value="start">el día de inicio</option><option value="next">la semana siguiente</option></select></label>
     <label class="check"><input type="checkbox" id="rec3"> Recuperar días pendientes (rellena solo lo que falta; cada fila sigue desde su último valor)</label>
     <div class="field"><span>Valores generados</span>
@@ -494,8 +500,9 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 <div class="scrim" id="set2Scrim" hidden>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="set2Title">
     <h2 id="set2Title">Generar valores</h2>
-    <p class="sub">Desde el día de inicio (al abrir: el primer día que falta; si no falta nada, hoy) hasta hoy, en las filas marcadas en amarillo: unas columnas con valores, otras vacías, contando desde la última vez que se generó. Lo que ya hay en ese periodo se borra y se genera de nuevo, salvo al recuperar días pendientes.</p>
+    <p class="sub">Desde el día de inicio (al abrir: el primer día que falta; si no falta nada, hoy) hasta hoy o hasta el día elegido, en las filas marcadas en amarillo: unas columnas con valores, otras vacías, contando desde la última vez que se generó. Lo que ya hay en ese periodo se borra y se genera de nuevo, salvo al recuperar días pendientes.</p>
     <label class="field"><span>Día de inicio</span><input type="date" id="g2Start" class="num" style="width:auto;text-align:left"></label>
+    <div class="check until"><label><input type="checkbox" id="until2"> Hasta el día</label><input type="date" id="untilDate2" class="num" disabled></div>
     <label class="check"><input type="checkbox" id="rec2"> Recuperar días pendientes (rellena solo las columnas que faltan, desde el último grupo generado)</label>
     <div class="field"><span>Valores por fila marcada</span><div class="summary" id="g2Rules" style="margin:0"></div></div>
     <div class="field"><span>Columnas</span>
@@ -587,6 +594,18 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   // day numbers (days since 1970) make "every N days" counting cross months and years cleanly
   const dayNum = iso => { const [y, m, d] = iso.split("-").map(Number); return Math.round(Date.UTC(y, m - 1, d) / 864e5); };
   const todayIso = () => curKey + "-" + String(now.getDate()).padStart(2, "0");
+  // "Hasta el día" (n = settings panel 1, 2, 3): the last day to fill — today, or the chosen day
+  // when the box is ticked (never after today). Not stored: every opening starts unticked.
+  function untilDay(n) {
+    const t = dayNum(todayIso()), v = $("untilDate" + n).value;
+    return $("until" + n).checked && /^\d{4}-\d{2}-\d{2}$/.test(v) ? Math.min(dayNum(v), t) : t;
+  }
+  const untilTxt = n => untilDay(n) === dayNum(todayIso()) ? "hasta hoy" : `hasta el ${longDate(untilDay(n))}`;
+  function resetUntil(n) { $("until" + n).checked = false; $("untilDate" + n).value = isoOf(dayNum(todayIso()) - 1); $("untilDate" + n).max = todayIso(); $("untilDate" + n).disabled = true; }
+  function wireUntil(n, onChange) {
+    $("until" + n).addEventListener("input", () => { $("untilDate" + n).disabled = !$("until" + n).checked; onChange(); });
+    $("untilDate" + n).addEventListener("input", onChange);
+  }
   const kd = n => { const dt = new Date(n * 864e5); return { key: mk(dt.getUTCFullYear(), dt.getUTCMonth()), day: dt.getUTCDate() }; };
   const isoOf = n => { const { key, day } = kd(n); return key + "-" + String(day).padStart(2, "0"); };
   const longDate = n => { const { key, day } = kd(n); return `${day} de ${label(key)}`; };
@@ -1087,7 +1106,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   }
   // keep: recovering, so days with a value stay and each row carries on from its own values
   function g3Cells(g, keep) {
-    const out = [], first = dayNum(g.start), last = dayNum(todayIso());
+    const out = [], first = dayNum(g.start), last = untilDay(3);
     const anchors = new Map(rows3().map(row => [row.id, rowLast(row, first)]));
     for (let n = first; n <= last; n++) {
       const { key, day } = kd(n);
@@ -1136,15 +1155,16 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
       return `<span style="color:${FREQ[row.color].mark}">●</span> ${esc(rowTitle(row, i))}: ` + (st.today ? "<b>hoy</b>" : st.next != null ? `todavía no, próximo el ${longDate(st.next)}` : "sin fecha");
     }).join("<br>");
     $("g3Summary").innerHTML = (last != null ? `Último día con valores: <b>${longDate(last)}</b>.<br>` : "") + (!rows3().length ? "No hay filas que rellenar."
-      : dayNum(g.start) > dayNum(todayIso()) ? "El día de inicio es posterior a hoy: no hay nada que rellenar todavía."
-      : on.length ? (g.start === todayIso() ? `Hoy se generan <b>${on.length} ${on.length === 1 ? "valor" : "valores"}</b>.` : `Rellenará <b>${days} ${days === 1 ? "día" : "días"}</b> desde el <b>${+g.start.slice(8)} de ${label(g.start.slice(0, 7))}</b> hasta hoy.`)
-      : "<b>Hoy no toca generar en ninguna fila.</b>") + (rows3().length ? "<br><br>" + status : "");
+      : dayNum(g.start) > untilDay(3) ? "El día de inicio es posterior al día final: no hay nada que rellenar."
+      : on.length ? (g.start === todayIso() ? `Hoy se generan <b>${on.length} ${on.length === 1 ? "valor" : "valores"}</b>.` : `Rellenará <b>${days} ${days === 1 ? "día" : "días"}</b> desde el <b>${+g.start.slice(8)} de ${label(g.start.slice(0, 7))}</b> ${untilTxt(3)}.`)
+      : untilDay(3) === dayNum(todayIso()) ? "<b>Hoy no toca generar en ninguna fila.</b>" : `<b>No toca generar en ninguna fila</b> ${untilTxt(3)}.`) + (rows3().length ? "<br><br>" + status : "");
     $("g3Go").disabled = !on.length || !vals3().length;
   }
   function openSettings3() {
     const g = Object.assign(g3Defaults(), config.gen3 || {});
     $("g3Start").value = todayIso(); $("g3Start").disabled = false;
     // with days missing in some row since its last value, start there and fill only those
+    resetUntil(3);
     const { from } = pending3();
     $("rec3").checked = from != null && from < dayNum(todayIso()); setRec3();
     $("g3QFrom").value = g.qFrom === "next" ? "next" : "start";
@@ -1156,6 +1176,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   $("g3Start").addEventListener("input", () => { summarize3(); saveConfig(); });
   $("g3QFrom").addEventListener("input", () => { summarize3(); saveConfig(); });
   $("rec3").addEventListener("input", () => { setRec3(); summarize3(); saveConfig(); });
+  wireUntil(3, summarize3);
   $("set3Close").onclick = () => { $("set3Scrim").hidden = true; render(); };
   $("g3Go").onclick = () => {
     summarize3();
@@ -1682,7 +1703,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   }
   function openSettings() {
     // every time the settings open, generation starts on the first missing day, else today
-    $("startDate").value = todayIso(); $("startDate").disabled = false; $("rec1").checked = pending1() != null; setRec1();
+    $("startDate").value = todayIso(); $("startDate").disabled = false; $("rec1").checked = pending1() != null; setRec1(); resetUntil(1);
     $("aMin").value = fmt(config.ranges.a[0]); $("aMax").value = fmt(config.ranges.a[1]);
     $("bMin").value = fmt(config.ranges.b[0]); $("bMax").value = fmt(config.ranges.b[1]);
     $("overwrite").checked = !!config.overwrite;
@@ -1707,9 +1728,10 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     config.overwrite = $("overwrite").checked;
   }
   function monthsToFill() {
-    let k = config.startMonth > curKey ? curKey : config.startMonth;
+    const end = kd(untilDay(1)).key;
+    let k = config.startMonth > end ? end : config.startMonth;
     const list = [];
-    while (k <= curKey) { list.push(k); k = shift(k, 1); }
+    while (k <= end) { list.push(k); k = shift(k, 1); }
     return list;
   }
   function summarize() {
@@ -1717,18 +1739,20 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     const n = namedRows().length;
     const list = monthsToFill();
     const from = config.startMonth <= curKey ? startDay() : 1;
-    const onlyToday = list.length === 1 && from === now.getDate();
-    const range = onlyToday ? `<b>hoy, ${now.getDate()} de ${label(curKey)}</b>,`
-      : list.length > 1 ? `del <b>${from} de ${label(list[0])}</b> al <b>${now.getDate()} de ${label(curKey)}</b>` : `del ${from} al <b>${now.getDate()} de ${label(curKey)}</b>`;
+    const e = kd(untilDay(1)), late = config.startMonth + "-" + String(startDay()).padStart(2, "0") > isoOf(untilDay(1));
+    const onlyToday = list.length === 1 && from === e.day && untilDay(1) === dayNum(todayIso());
+    const range = onlyToday ? `<b>hoy, ${e.day} de ${label(e.key)}</b>,`
+      : list.length > 1 ? `del <b>${from} de ${label(list[0])}</b> al <b>${e.day} de ${label(e.key)}</b>` : `del ${from} al <b>${e.day} de ${label(e.key)}</b>`;
     const r = config.ranges, last = lastDay1(), t = dayNum(todayIso());
     const lastLine = last == null ? "" : `Último día con valores: <b>${longDate(last)}</b>` + (last + 1 < t ? ` (faltan ${t - last} días hasta hoy).<br>` : ".<br>");
-    $("summary").innerHTML = n
-      ? lastLine + `Rellenará ${range} para <b>${n} ${n === 1 ? "elemento" : "elementos"}</b> y corregirá los valores fuera de franja.<br>Valores entre ${fmt(r.a[0])} y ${fmt(r.a[1])}` + (n > 2 ? `, los dos últimos entre ${fmt(r.b[0])} y ${fmt(r.b[1])}.` : `; con ${n} ${n === 1 ? "elemento" : "elementos"} todos usan ${fmt(r.b[0])}–${fmt(r.b[1])}.`)
+    $("summary").innerHTML = late ? lastLine + "El día de inicio es posterior al día final: no hay nada que rellenar."
+      : n ? lastLine + `Rellenará ${range} para <b>${n} ${n === 1 ? "elemento" : "elementos"}</b> y corregirá los valores fuera de franja.<br>Valores entre ${fmt(r.a[0])} y ${fmt(r.a[1])}` + (n > 2 ? `, los dos últimos entre ${fmt(r.b[0])} y ${fmt(r.b[1])}.` : `; con ${n} ${n === 1 ? "elemento" : "elementos"} todos usan ${fmt(r.b[0])}–${fmt(r.b[1])}.`)
       : "Escribe al menos un nombre en la columna <b>Elemento</b>: las filas sin nombre no se rellenan.";
-    $("goBtn").disabled = !n;
+    $("goBtn").disabled = !n || late;
   }
   ["startDate", "aMin", "aMax", "bMin", "bMax", "overwrite"].forEach(id => $(id).addEventListener("input", () => { summarize(); saveConfig(); }));
   $("rec1").addEventListener("input", () => { setRec1(); summarize(); saveConfig(); });
+  wireUntil(1, summarize);
   $("raOpts").addEventListener("input", e => {
     const mode = e.target.id === "raFromOnly" ? "from" : e.target.matches("#raFrom, #raTo") ? "range" : null;
     if (mode) document.querySelector(`input[name="raMode"][value="${mode}"]`).checked = true;
@@ -1758,7 +1782,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   const g2Defaults = () => ({ start: curKey + "-01", on: 2, off: 5 });
   // every day from the start to today (the period a new generation clears)
   function g2Period(g) {
-    const out = [], first = dayNum(g.start), last = dayNum(todayIso());
+    const out = [], first = dayNum(g.start), last = untilDay(2);
     for (let n = first; n <= last; n++) { const dt = new Date(n * 864e5); out.push({ key: mk(dt.getUTCFullYear(), dt.getUTCMonth()), day: dt.getUTCDate() }); }
     return out;
   }
@@ -1791,7 +1815,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   }
   const g2Pos = (g, anchor, n) => ((n - anchor) % (g.on + g.off) + (g.on + g.off)) % (g.on + g.off);
   function g2Days(g) {
-    const out = [], first = dayNum(g.start), last = dayNum(todayIso()), cycle = g.on + g.off, anchor = g2Anchor(g, first);
+    const out = [], first = dayNum(g.start), last = untilDay(2), cycle = g.on + g.off, anchor = g2Anchor(g, first);
     for (let n = first; n <= last; n++) {
       const pos = g2Pos(g, anchor, n);
       if (pos >= g.on) continue;
@@ -1824,9 +1848,9 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     const next = g2Next(g), today = g.start === todayIso(), { last } = pending2(g);
     const missing = days.filter(x => !gen2Has(x.n)).length;
     const lastLine = last == null ? "" : `Último día generado: <b>${longDate(last)}</b>.<br>`;
-    $("g2Summary").innerHTML = lastLine + (dayNum(g.start) > dayNum(todayIso()) ? "El día de inicio es posterior a hoy: no hay nada que rellenar todavía."
-      : $("rec2").checked ? (missing ? `Rellenará <b>${missing} ${missing === 1 ? "día que falta" : "días que faltan"}</b> desde el <b>${fmtD({ key: g.start.slice(0, 7), day: +g.start.slice(8) })}</b> hasta hoy, sin tocar lo que ya hay (${g.on} con valores, ${g.off} vacías).` : "<b>No falta nada</b> hasta hoy." + (next != null ? ` Próximo día con valores: <b>${longDate(next)}</b>.` : ""))
-      : days.length ? (today ? "Hoy toca: rellenará <b>hoy</b>" : `Borrará las filas marcadas desde el <b>${fmtD({ key: g.start.slice(0, 7), day: +g.start.slice(8) })}</b> hasta hoy y rellenará <b>${days.length} días</b>`) + ` (${g.on} con valores, ${g.off} vacías).`
+    $("g2Summary").innerHTML = lastLine + (dayNum(g.start) > untilDay(2) ? "El día de inicio es posterior al día final: no hay nada que rellenar."
+      : $("rec2").checked ? (missing ? `Rellenará <b>${missing} ${missing === 1 ? "día que falta" : "días que faltan"}</b> desde el <b>${fmtD({ key: g.start.slice(0, 7), day: +g.start.slice(8) })}</b> ${untilTxt(2)}, sin tocar lo que ya hay (${g.on} con valores, ${g.off} vacías).` : `<b>No falta nada</b> ${untilTxt(2)}.` + (next != null ? ` Próximo día con valores: <b>${longDate(next)}</b>.` : ""))
+      : days.length ? (today ? "Hoy toca: rellenará <b>hoy</b>" : `Borrará las filas marcadas desde el <b>${fmtD({ key: g.start.slice(0, 7), day: +g.start.slice(8) })}</b> ${untilTxt(2)} y rellenará <b>${days.length} días</b>`) + ` (${g.on} con valores, ${g.off} vacías).`
       : `<b>Hoy no toca generar</b>: todavía no han pasado las ${g.off} columnas vacías desde la última vez.` + (next != null ? ` Próximo día con valores: <b>${longDate(next)}</b>.` : ""));
     $("g2Go").disabled = $("rec2").checked ? !missing : !days.length;
   }
@@ -1834,6 +1858,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     const g = Object.assign(g2Defaults(), config.gen2 || {});
     $("g2Start").value = todayIso(); $("g2Start").disabled = false; $("g2On").value = g.on; $("g2Off").value = g.off;
     // with columns missing since the last generated group, start there and fill only those
+    resetUntil(2);
     const { from } = pending2(readG2());
     $("rec2").checked = from != null && from < dayNum(todayIso()); setRec2();
     $("g2Rules").innerHTML = GEN_ROWS.map((r, i) => `<b>${i + 1}ª</b> ${GEN_RULES[r].text}`).join("<br>");
@@ -1842,6 +1867,7 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   }
   ["g2Start", "g2On", "g2Off"].forEach(id => $(id).addEventListener("input", () => { summarize2(); saveConfig(); }));
   $("rec2").addEventListener("input", () => { setRec2(); summarize2(); saveConfig(); });
+  wireUntil(2, summarize2);
   $("set2Close").onclick = () => { $("set2Scrim").hidden = true; };
   $("g2Go").onclick = () => {
     const g = readG2(), touched = new Set(), plan = g2Days(g);
@@ -1890,9 +1916,9 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     if (!rows.length) return;
     const b = bSet();
     let count = 0, fixed = 0;
-    const list = monthsToFill();
+    const list = monthsToFill(), end = kd(untilDay(1));
     for (const k of list) {
-      const last = k === curKey ? now.getDate() : daysIn(k);
+      const last = k === end.key ? end.day : daysIn(k);
       const first = k === config.startMonth ? startDay() : 1;   // days before the start day are left alone
       const m = months[k] = { cells: JSON.parse(JSON.stringify((months[k] && months[k].cells) || {})) };
       for (const r of rows) {
