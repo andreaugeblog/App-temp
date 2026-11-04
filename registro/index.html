@@ -302,7 +302,8 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
 
 @media (max-width: 420px) { .s2-when { min-width: 4.6em; } }
 
-.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 60; background: var(--ink); color: var(--bg); padding: 11px 16px; border-radius: 10px; font-size: .9rem; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); z-index: 60; background: var(--ink); color: var(--bg); padding: 11px 16px; border-radius: 10px; font-size: .9rem; box-shadow: var(--shadow); max-width: calc(100% - 32px); display: flex; align-items: center; gap: 12px; }
+.toast .tx { flex: none; border: 0; background: transparent; color: inherit; font: inherit; font-size: 1rem; line-height: 1; padding: 4px 2px 4px 8px; opacity: .8; cursor: pointer; }
 </style>
 
 <header class="bar">
@@ -1223,8 +1224,9 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     for (const k in work) { const [key, id] = k.split("|"); setRowVals(key, rowById(id), work[k]); touched.add(key); }
     touched.forEach(k => writeDoc(monthPath(k), months[k]));
     writeDoc(cfgPath(), config);
-    $("set3Scrim").hidden = true; render();
-    toast(count ? `Hecho: ${count} valores en ${touched.size} ${touched.size === 1 ? "mes" : "meses"}.` : "Hoy no toca generar.");
+    // the settings stay open, refreshed, so the tabs can move on to another section
+    render(); openSettings3();
+    toast(count ? `Hecho: ${count} valores generados en ${touched.size} ${touched.size === 1 ? "mes" : "meses"}.` : "No se ha generado nada: hoy no toca.", 2000);
   };
 
   // ---- third section: the table ----
@@ -1902,8 +1904,8 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     }
     touched.forEach(k => writeDoc(monthPath(k), months[k]));
     writeDoc(cfgPath(), config);
-    $("set2Scrim").hidden = true; render();
-    toast(count ? `Hecho: ${count} valores en ${touched.size} ${touched.size === 1 ? "mes" : "meses"}.` : "Hoy no toca generar.");
+    render(); openSettings2();
+    toast(count ? `Hecho: ${count} valores generados en ${touched.size} ${touched.size === 1 ? "mes" : "meses"}.` : "No se ha generado nada: hoy no toca.", 2000);
   };
   $("goBtn").onclick = () => {
     readSettings();
@@ -1930,12 +1932,11 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
     }
     config.bSig = bSig();
     writeDoc(cfgPath(), config);
-    $("setScrim").hidden = true;
-    viewKey = curKey; render();
+    viewKey = curKey; render(); openSettings();
     const parts = [];
     if (count) parts.push(`${count} valores introducidos`);
     if (fixed) parts.push(`${fixed} corregidos por estar fuera de franja`);
-    toast(parts.length ? `Hecho: ${parts.join(", ")} (${list.length} ${list.length === 1 ? "hoja" : "hojas"}).` : "Todo ya está relleno y en la franja correcta.");
+    toast(parts.length ? `Hecho: ${parts.join(", ")} (${list.length} ${list.length === 1 ? "hoja" : "hojas"}).` : "No se ha generado nada: todo ya está relleno y en la franja correcta.", 2000);
   };
 
   // months worth offering in pickers: from the earliest with data (or start month) to the latest
@@ -2392,7 +2393,12 @@ body[data-type="s3"] #sheet, body[data-type="s3"] .under, body[data-type="s3"] .
   }
 
   let toastT;
-  function toast(msg) { const t = $("toast"); t.textContent = msg; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, 3200); }
+  function toast(msg, ms = 3200) {
+    const t = $("toast");
+    t.innerHTML = `<span>${esc(msg)}</span><button class="tx" aria-label="Cerrar">✕</button>`;
+    t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, ms);
+  }
+  $("toast").addEventListener("click", e => { if (e.target.closest(".tx")) { clearTimeout(toastT); $("toast").hidden = true; } });
 
   // ---- sections ----
   const sec = () => sections.find(x => x.id === active) || sections[0];
